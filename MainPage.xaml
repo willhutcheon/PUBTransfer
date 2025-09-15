@@ -13,40 +13,40 @@
                    Style="{StaticResource Headline}"
                    SemanticProperties.HeadingLevel="Level1" />
             <!-- === Survey Card === -->
-            <Frame x:Name="SurveyCard"
+            <!--<Frame x:Name="SurveyCard"
                    CornerRadius="12"
                    Padding="15"
                    Margin="15"
                    BackgroundColor="#2D2D2D"
                    HasShadow="True">
                 <VerticalStackLayout Spacing="12">
-                    <!-- Title -->
-                    <Label Text="Survey"
+                    --><!-- Title -->
+                    <!--<Label Text="Survey"
                            FontSize="24"
                            TextColor="#f5f5f5"
                            FontFamily="sans-serif-medium"
-                           Margin="5,0"/>
+                           Margin="5,0"/>-->
                     <!-- Divider Line -->
-                    <BoxView HeightRequest="2"
-                             BackgroundColor="#f5f5f5"/>
+                    <!--<BoxView HeightRequest="2"
+                             BackgroundColor="#f5f5f5"/>-->
                     <!-- Survey Status -->
-                    <Label x:Name="lblSurvey"
+                    <!--<Label x:Name="lblSurvey"
                         FontSize="18"
                         TextColor="#f5f5f5"
                         FontFamily="sans-serif-medium"
                         HorizontalOptions="Center"
-                        Margin="0,12"/>
+                        Margin="0,12"/>-->
                     <!-- Button -->
-                    <Button x:Name="btnSurvey"
+                    <!--<Button x:Name="btnSurvey"
                             Text="View Survey"
                             BackgroundColor="#3F51B5"
                             CornerRadius="8"
                             HorizontalOptions="Center"
-                            Clicked="BtnSurvey_Clicked"/>
+                            Clicked="BtnSurvey_Clicked"/>--><!--
                 </VerticalStackLayout>
-            </Frame>
+            </Frame>-->
             <!-- DEV/QA/PROD switches -->
-            <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+            <!--<VerticalStackLayout Spacing="10" HorizontalOptions="Center">
                 <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
                     <Switch x:Name="sliderDEV" IsToggled="True"/>
                     <Label Text="Development" VerticalOptions="Center"/>
@@ -59,19 +59,19 @@
                     <Switch x:Name="sliderPROD" IsToggled="False"/>
                     <Label Text="Production" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
-            </VerticalStackLayout>
+            </VerticalStackLayout>-->
             <!-- WebView for the survey -->
-            <WebView x:Name="webSurvey"
+            <!--<WebView x:Name="webSurvey"
                      HeightRequest="370"
                      Margin="7"
                      HorizontalOptions="Fill"
-                     VerticalOptions="Fill"/>
+                     VerticalOptions="Fill"/>-->
             <Label x:Name="androidIdLabel" 
                 TextColor="White"
                 FontSize="18" />
-            <Image x:Name="qrCodeImage"
+            <!--<Image x:Name="qrCodeImage"
                 WidthRequest="300"
-                HeightRequest="300" />
+                HeightRequest="300" />-->
             <Button x:Name="ScanButton" 
                     Text="Scan" 
                     Clicked="OnScanClicked"/>
