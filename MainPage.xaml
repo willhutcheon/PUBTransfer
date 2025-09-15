@@ -111,6 +111,9 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+
+            <Button Text="Show Data" Clicked="OnShowDataClicked" />
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
