@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Microsoft.Maui.ApplicationModel;
 using System.Net.Http;
 using QRCoder;
+using System.Text;
 
 namespace PUBTransfer
 {
@@ -246,6 +247,37 @@ namespace PUBTransfer
             //    Console.WriteLine($"Selected environment: {selectedEnv}");
             //}
         }
+        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
+        //{
+        //    if (e.Item is IDevice selectedDevice)
+        //    {
+        //        try
+        //        {
+        //            await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
+        //            // Connect
+        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
+        //            await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
+        //            // Optional: Discover services
+        //            var services = await selectedDevice.GetServicesAsync();
+        //            foreach (var service in services)
+        //            {
+        //                Console.WriteLine($"Service: {service.Id}");
+        //                var characteristics = await service.GetCharacteristicsAsync();
+        //                foreach (var characteristic in characteristics)
+        //                {
+        //                    Console.WriteLine($"  Characteristic: {characteristic.Id}");
+        //                }
+        //            }
+        //            // Store globally if needed
+        //            Globals.serialNumber = selectedDevice.Id.ToString();
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
+        //        }
+        //    }
+        //}
+
         private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
         {
             if (e.Item is IDevice selectedDevice)
@@ -256,7 +288,7 @@ namespace PUBTransfer
                     // Connect
                     await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
                     await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-                    // Optional: Discover services
+                    // Discover services
                     var services = await selectedDevice.GetServicesAsync();
                     foreach (var service in services)
                     {
@@ -264,10 +296,39 @@ namespace PUBTransfer
                         var characteristics = await service.GetCharacteristicsAsync();
                         foreach (var characteristic in characteristics)
                         {
-                            Console.WriteLine($"  Characteristic: {characteristic.Id}");
+                            Console.WriteLine($"  Characteristic: {characteristic.Id}, CanRead={characteristic.CanRead}");
+                            if (characteristic.CanRead)
+                            {
+                                try
+                                {
+                                    // Deconstruct the tuple result
+                                    var (data, resultCode) = await characteristic.ReadAsync();
+                                    if (resultCode == 0 && data != null && data.Length > 0)
+                                    {
+                                        // Try to decode as UTF-8
+                                        string textValue = Encoding.UTF8.GetString(data);
+                                        string hexValue = BitConverter.ToString(data);
+                                        Console.WriteLine($"Read from {characteristic.Id}: {textValue}");
+                                        Console.WriteLine($"Raw Hex: {hexValue}");
+                                        await DisplayAlert("Device Data",
+                                            $"Characteristic {characteristic.Id}\n" +
+                                            $"Text: {textValue}\n" +
+                                            $"Hex: {hexValue}",
+                                            "OK");
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine($"Characteristic {characteristic.Id} returned no data. ResultCode={resultCode}");
+                                    }
+                                }
+                                catch (Exception readEx)
+                                {
+                                    Console.WriteLine($"Failed to read {characteristic.Id}: {readEx.Message}");
+                                }
+                            }
                         }
                     }
-                    // Store globally if needed
+                    // Save device globally if you need it
                     Globals.serialNumber = selectedDevice.Id.ToString();
                 }
                 catch (Exception ex)
