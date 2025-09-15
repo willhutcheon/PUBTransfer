@@ -76,7 +76,7 @@ namespace PUBTransfer
                     }
                 };
                 await _bluetoothAdapter.StartScanningForDevicesAsync();
-                await DisplayAlert("Scan Complete", $"{Devices.Count} devices found.", "OK");
+                //await DisplayAlert("Scan Complete", $"{Devices.Count} devices found.", "OK");
             }
             catch (Exception ex)
             {
@@ -237,5 +237,44 @@ namespace PUBTransfer
         //    androidIdLabel.Text = $"Device ID: {deviceId}";
         //    qrCodeImage.Source = GenerateQRCode(deviceId);
         //}
+        private void OnEnvironmentChanged(object sender, CheckedChangedEventArgs e)
+        {
+            var radio = sender as RadioButton;
+            //if (radio.IsChecked)
+            //{
+            //    string selectedEnv = radio.Value.ToString();
+            //    Console.WriteLine($"Selected environment: {selectedEnv}");
+            //}
+        }
+        private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
+        {
+            if (e.Item is IDevice selectedDevice)
+            {
+                try
+                {
+                    await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
+                    // Connect
+                    await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
+                    await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
+                    // Optional: Discover services
+                    var services = await selectedDevice.GetServicesAsync();
+                    foreach (var service in services)
+                    {
+                        Console.WriteLine($"Service: {service.Id}");
+                        var characteristics = await service.GetCharacteristicsAsync();
+                        foreach (var characteristic in characteristics)
+                        {
+                            Console.WriteLine($"  Characteristic: {characteristic.Id}");
+                        }
+                    }
+                    // Store globally if needed
+                    Globals.serialNumber = selectedDevice.Id.ToString();
+                }
+                catch (Exception ex)
+                {
+                    await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
+                }
+            }
+        }
     }
 }

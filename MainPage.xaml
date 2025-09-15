@@ -20,34 +20,36 @@
                    BackgroundColor="#2D2D2D"
                    HasShadow="True">
                 <VerticalStackLayout Spacing="12">
-                    --><!-- Title -->
-                    <!--<Label Text="Survey"
+                    -->
+            <!-- Title -->
+            <!--<Label Text="Survey"
                            FontSize="24"
                            TextColor="#f5f5f5"
                            FontFamily="sans-serif-medium"
                            Margin="5,0"/>-->
-                    <!-- Divider Line -->
-                    <!--<BoxView HeightRequest="2"
+            <!-- Divider Line -->
+            <!--<BoxView HeightRequest="2"
                              BackgroundColor="#f5f5f5"/>-->
-                    <!-- Survey Status -->
-                    <!--<Label x:Name="lblSurvey"
+            <!-- Survey Status -->
+            <!--<Label x:Name="lblSurvey"
                         FontSize="18"
                         TextColor="#f5f5f5"
                         FontFamily="sans-serif-medium"
                         HorizontalOptions="Center"
                         Margin="0,12"/>-->
-                    <!-- Button -->
-                    <!--<Button x:Name="btnSurvey"
+            <!-- Button -->
+            <!--<Button x:Name="btnSurvey"
                             Text="View Survey"
                             BackgroundColor="#3F51B5"
                             CornerRadius="8"
                             HorizontalOptions="Center"
-                            Clicked="BtnSurvey_Clicked"/>--><!--
+                            Clicked="BtnSurvey_Clicked"/>-->
+            <!--
                 </VerticalStackLayout>
             </Frame>-->
             <!-- DEV/QA/PROD switches -->
-            <!--<VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+            <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                <!--<HorizontalStackLayout Spacing="10" VerticalOptions="Center">
                     <Switch x:Name="sliderDEV" IsToggled="True"/>
                     <Label Text="Development" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
@@ -58,8 +60,24 @@
                 <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
                     <Switch x:Name="sliderPROD" IsToggled="False"/>
                     <Label Text="Production" VerticalOptions="Center"/>
-                </HorizontalStackLayout>
-            </VerticalStackLayout>-->
+                </HorizontalStackLayout>-->
+
+
+                <!--radio buttons, use-->
+                <!--<RadioButton Content="Development"
+                    GroupName="EnvironmentGroup"
+                    IsChecked="True"
+                    Value="DEV"
+                    CheckedChanged="OnEnvironmentChanged" />
+                <RadioButton Content="QA"
+                    GroupName="EnvironmentGroup"
+                    Value="QA"
+                    CheckedChanged="OnEnvironmentChanged" />
+                <RadioButton Content="Production"
+                    GroupName="EnvironmentGroup"
+                    Value="PROD"
+                    CheckedChanged="OnEnvironmentChanged" />-->
+            </VerticalStackLayout>
             <!-- WebView for the survey -->
             <!--<WebView x:Name="webSurvey"
                      HeightRequest="370"
@@ -76,13 +94,23 @@
                     Text="Scan" 
                     Clicked="OnScanClicked"/>
             <Button Text="Clear" Clicked="OnClearClicked"/>
-            <CollectionView x:Name="DevicesListView">
+            <!--<CollectionView x:Name="DevicesListView">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Label Text="{Binding Name}" />
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
-            </CollectionView>
+            </CollectionView>-->
+            <ListView x:Name="DevicesListView"
+                ItemsSource="{Binding Devices}"
+                ItemTapped="OnDeviceSelected"
+                HasUnevenRows="True">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextCell Text="{Binding Name}" Detail="{Binding Id}" />
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
