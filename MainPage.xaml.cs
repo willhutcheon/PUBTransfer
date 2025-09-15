@@ -31,10 +31,9 @@ namespace PUBTransfer
     public partial class MainPage : ContentPage
     {
         private EnvironmentType currentEnvironment = EnvironmentType.DEV;
-
-        //private readonly IAdapter _bluetoothAdapter;
-        //private readonly IBluetoothLE _bluetoothLE;
-        //public ObservableCollection<IDevice> Devices { get; set; } = new();
+        private readonly IAdapter _bluetoothAdapter;
+        private readonly IBluetoothLE _bluetoothLE;
+        public ObservableCollection<IDevice> Devices { get; set; } = new();
         // WiFi switching state management
         //private Timer _wifiTimer;
         //private bool _isOnSecondNetwork = false;
@@ -43,6 +42,93 @@ namespace PUBTransfer
         {
             InitializeComponent();
             DisplayQRCode();
+            _bluetoothLE = CrossBluetoothLE.Current;
+            _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
+            DevicesListView.ItemsSource = Devices;
+        }
+        private async void OnScanClicked(object sender, EventArgs e)
+        {
+            // Disable the button while scanning
+            ScanButton.IsEnabled = false;
+            ScanButton.Text = "Scanning...";
+            try
+            {
+                // Run your scan logic
+                var permissionStatus = await RequestBluetoothPermissions();
+                if (permissionStatus != PermissionStatus.Granted)
+                {
+                    await DisplayAlert("Permission Denied", "Bluetooth permissions are required", "OK");
+                    return;
+                }
+                if (!_bluetoothLE.IsOn)
+                {
+                    await DisplayAlert("Bluetooth Off", "Please enable Bluetooth", "OK");
+                    return;
+                }
+                Devices.Clear();
+                _bluetoothAdapter.DeviceDiscovered += (s, a) =>
+                {
+                    // Ensure the device has a non-null name and matches the desired prefix
+                    if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
+                    {
+                        if (!Devices.Contains(a.Device))
+                        {
+                            MainThread.BeginInvokeOnMainThread(() =>
+                            {
+                                Devices.Add(a.Device);
+                            });
+                        }
+                    }
+                };
+                await _bluetoothAdapter.StartScanningForDevicesAsync();
+                await DisplayAlert("Scan Complete", $"{Devices.Count} devices found.", "OK");
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"Failed to scan: {ex.Message}", "OK");
+            }
+            finally
+            {
+                // Re-enable after scanning
+                ScanButton.IsEnabled = true;
+                ScanButton.Text = "Scan";
+            }
+        }
+        private async Task<PermissionStatus> RequestBluetoothPermissions()
+        {
+            try
+            {
+#if ANDROID
+                // For Android 12+ (API 31+), we need BLUETOOTH_SCAN and BLUETOOTH_CONNECT
+                if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.S)
+                {
+                    //var scanPermission = await Permissions.RequestAsync<MAUI_Test_Bluetooth.Platforms.Android.BluetoothScanPermission>();
+                    var scanPermission = await Permissions.RequestAsync<Platforms.Android.Permissions.BluetoothScanPermission>();
+                    if (scanPermission != PermissionStatus.Granted)
+                        return scanPermission;
+                    var connectPermission = await Permissions.RequestAsync<Platforms.Android.Permissions.BluetoothConnectPermission>();
+                    if (connectPermission != PermissionStatus.Granted)
+                        return connectPermission;
+                }
+                else
+                {
+                    // For older Android versions, we need location permissions
+                    var locationPermission = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+                    if (locationPermission != PermissionStatus.Granted)
+                        return locationPermission;
+                }
+#endif
+                return PermissionStatus.Granted;
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Permission Error", $"Failed to request permissions: {ex.Message}", "OK");
+                return PermissionStatus.Denied;
+            }
+        }
+        private void OnClearClicked(object sender, EventArgs e)
+        {
+            Devices.Clear();
         }
         protected override async void OnAppearing()
         {
@@ -64,14 +150,8 @@ namespace PUBTransfer
             int envCode = GetEnvironmentCode();
             string envDomain = GetSurveyDomain();
             //string urlStr = $"{envDomain}/api/Survey?Serial={Globals.serialNumber}&DBID={envCode}";
-
-
-
             //hardcode one here to test if you can see things in the webview
             string urlStr = "https://cme-pub-survey-dev.azurewebsites.net/api/Survey?Serial=e43e12b8ecc515c9&DBID=0";
-            //string urlStr = "https://cme-pub-survey-dev.azurewebsites.net/Survey?Serial=e43e12b8ecc515c9&Code=2333&DBID=0";
-
-
             Console.WriteLine("--- URL: " + urlStr);
             try
             {
@@ -80,9 +160,6 @@ namespace PUBTransfer
                 int numSurvey = int.TryParse(responseString, out int parsed) ? parsed : 0;
                 await MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    //remove
-                    //numSurvey = 1;
-
                     if (numSurvey > 0)
                     {
                         lblSurvey.Text = numSurvey == 1 ? "1 Survey Available" : $"{numSurvey} Surveys Available";
@@ -146,16 +223,11 @@ namespace PUBTransfer
             //if (!string.IsNullOrEmpty(Globals.serialNumber))
             //{
                 //string surveyUrl = $"{GetSurveyDomain()}/SurveyPage?serial={Globals.serialNumber}";
-
                 //hard coded for test
                 string surveyUrl = "https://cme-pub-survey-dev.azurewebsites.net/Survey?Serial=e43e12b8ecc515c9&Code=2333&DBID=0";
                 webSurvey.Source = surveyUrl;
             //}
         }
-
-
-
-
         private ImageSource GenerateQRCode(string data)
         {
             var qrGenerator = new QRCodeGenerator();
@@ -164,7 +236,6 @@ namespace PUBTransfer
             byte[] qrCodeBytes = qrCode.GetGraphic(20);
             return ImageSource.FromStream(() => new MemoryStream(qrCodeBytes));
         }
-
         private void DisplayQRCode()
         {
             string deviceId = Guid.NewGuid().ToString(); // or use Preferences to persist
