@@ -10,15 +10,35 @@ using System.Text;
 
 namespace PUBTransfer
 {
+    //public class PuffData
+    //{
+    //    public DateTime Start { get; set; }
+    //    public DateTime End { get; set; }
+    //    public double XAngle { get; set; }
+    //    public double YAngle { get; set; }
+    //    public double ZAngle { get; set; }
+    //    public string RawData { get; set; }
+    //    public string[] puffRecord;
+    //}
+
     public class PuffData
     {
+        public int PuffId { get; set; }
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
+        public double Duration { get; set; }
+        public double Volume { get; set; }
+        public double Battery { get; set; }
         public double XAngle { get; set; }
         public double YAngle { get; set; }
         public double ZAngle { get; set; }
-        public string RawData { get; set; }
+
+        public override string ToString()
+        {
+            return $"Puff {PuffId} | Start={Start:HH:mm:ss} | End={End:HH:mm:ss} | Duration={Duration:F2}s | Battery={Battery:F2}V | Angles=({XAngle:F2}, {YAngle:F2}, {ZAngle:F2})";
+        }
     }
+
 
     public class BLEDeviceDetails
     {
@@ -296,65 +316,151 @@ namespace PUBTransfer
             //    Console.WriteLine($"Selected environment: {selectedEnv}");
             //}
         }
-        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        //{
-        //    if (e.Item is IDevice selectedDevice)
-        //    {
-        //        try
-        //        {
-        //            await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-        //            // Connect
-        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-        //            await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-        //            // Discover services
-        //            var services = await selectedDevice.GetServicesAsync();
-        //            foreach (var service in services)
-        //            {
-        //                Console.WriteLine($"Service: {service.Id}");
-        //                var characteristics = await service.GetCharacteristicsAsync();
-        //                foreach (var characteristic in characteristics)
-        //                {
-        //                    Console.WriteLine($"  Characteristic: {characteristic.Id}, CanRead={characteristic.CanRead}");
-        //                    if (characteristic.CanRead)
-        //                    {
-        //                        try
-        //                        {
-        //                            // Deconstruct the tuple result
-        //                            var (data, resultCode) = await characteristic.ReadAsync();
-        //                            if (resultCode == 0 && data != null && data.Length > 0)
-        //                            {
-        //                                // Try to decode as UTF-8
-        //                                string textValue = Encoding.UTF8.GetString(data);
-        //                                string hexValue = BitConverter.ToString(data);
-        //                                Console.WriteLine($"Read from {characteristic.Id}: {textValue}");
-        //                                Console.WriteLine($"Raw Hex: {hexValue}");
-        //                                await DisplayAlert("Device Data",
-        //                                    $"Characteristic {characteristic.Id}\n" +
-        //                                    $"Text: {textValue}\n" +
-        //                                    $"Hex: {hexValue}",
-        //                                    "OK");
-        //                            }
-        //                            else
-        //                            {
-        //                                Console.WriteLine($"Characteristic {characteristic.Id} returned no data. ResultCode={resultCode}");
-        //                            }
-        //                        }
-        //                        catch (Exception readEx)
-        //                        {
-        //                            Console.WriteLine($"Failed to read {characteristic.Id}: {readEx.Message}");
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //            // Save device globally if you need it
-        //            Globals.serialNumber = selectedDevice.Id.ToString();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
-        //        }
-        //    }
-        //}
+        private void ParseAndStorePuff(string textValue)
+        {
+            try
+            {
+                string[] strSplit = textValue.Split(',');
+
+                if (strSplit.Length < 7)
+                {
+                    Console.WriteLine("Not enough fields in puff data");
+                    return;
+                }
+
+                // Parse fields (adjust mapping if device spec changes)
+                int puffId = int.Parse(strSplit[1]);
+                double duration = double.Parse(strSplit[2]); // seconds
+                double volume = double.Parse(strSplit[3]);
+                double battery = double.Parse(strSplit[5]);
+                double xAngle = double.Parse(strSplit[6]);
+
+                DateTime start = DateTime.UtcNow;
+                DateTime end = start.AddSeconds(duration);
+
+                var puff = new PuffData
+                {
+                    PuffId = puffId,
+                    Start = start,
+                    End = end,
+                    Duration = duration,
+                    Volume = volume,
+                    Battery = battery,
+                    XAngle = xAngle,
+                    YAngle = 0,   // not present in your short format yet
+                    ZAngle = 0
+                };
+
+                Globals.CurrentDevice?.Puffs.Add(puff);
+
+                Console.WriteLine($"Stored puff: {puff}");
+
+
+
+
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    await Application.Current.MainPage.DisplayAlert(
+                        "Puff Data",
+                        $"PuffId: {puff.PuffId}\n" +
+                        $"Duration: {puff.Duration}s\n" +
+                        $"Volume: {puff.Volume}\n" +
+                        $"Battery: {puff.Battery}\n" +
+                        $"X Angle: {puff.XAngle}",
+                        "OK");
+                });
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing puff data: {ex.Message}");
+            }
+        }
+        private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
+        {
+            if (e.Item is IDevice selectedDevice)
+            {
+                try
+                {
+                    await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
+                    // Connect
+                    await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
+                    await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
+                    // Discover services
+                    var services = await selectedDevice.GetServicesAsync();
+                    foreach (var service in services)
+                    {
+                        Console.WriteLine($"Service: {service.Id}");
+                        var characteristics = await service.GetCharacteristicsAsync();
+                        foreach (var characteristic in characteristics)
+                        {
+                            Console.WriteLine($"  Characteristic: {characteristic.Id}, CanRead={characteristic.CanRead}");
+                            if (characteristic.CanRead)
+                            {
+                                try
+                                {
+                                    // Deconstruct the tuple result
+                                    var (data, resultCode) = await characteristic.ReadAsync();
+                                    //if (resultCode == 0 && data != null && data.Length > 0)
+                                    //{
+                                    //    // Try to decode as UTF-8
+                                    //    string textValue = Encoding.UTF8.GetString(data);
+                                    //    string hexValue = BitConverter.ToString(data);
+                                    //    Console.WriteLine($"Read from {characteristic.Id}: {textValue}");
+                                    //    Console.WriteLine($"Raw Hex: {hexValue}");
+                                    //    //the last characteristic pop up is the one with all the data
+                                    //    await DisplayAlert("Device Data",
+                                    //        $"Characteristic {characteristic.Id}\n" +
+                                    //        $"Text: {textValue}\n" +
+                                    //        $"Hex: {hexValue}",
+                                    //        "OK");
+                                    //}
+                                    if (resultCode == 0 && data != null && data.Length > 0)
+                                    {
+                                        // Decode as UTF-8
+                                        string textValue = Encoding.UTF8.GetString(data);
+                                        string hexValue = BitConverter.ToString(data);
+                                        Console.WriteLine($"Read from {characteristic.Id}: {textValue}");
+                                        Console.WriteLine($"Raw Hex: {hexValue}");
+
+                                        // Parse puff data if this characteristic contains it
+                                        if (textValue.StartsWith("PUB"))
+                                        {
+                                            ParseAndStorePuff(textValue);
+                                        }
+
+                                        // Optional: still show popup for debugging
+                                        //await DisplayAlert("Device Data",
+                                        //    $"Characteristic {characteristic.Id}\n" +
+                                        //    $"Text: {textValue}\n" +
+                                        //    $"Hex: {hexValue}",
+                                        //    "OK");
+                                    }
+
+                                    else
+                                    {
+                                        Console.WriteLine($"Characteristic {characteristic.Id} returned no data. ResultCode={resultCode}");
+                                    }
+                                }
+                                catch (Exception readEx)
+                                {
+                                    Console.WriteLine($"Failed to read {characteristic.Id}: {readEx.Message}");
+                                }
+                            }
+                        }
+                    }
+                    // Save device globally if you need it
+                    Globals.serialNumber = selectedDevice.Id.ToString();
+                }
+                catch (Exception ex)
+                {
+                    await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
+                }
+            }
+        }
 
 
 
@@ -568,122 +674,126 @@ namespace PUBTransfer
         //    }
         //}
 
-        private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        {
-            if (e.Item is not IDevice selectedDevice)
-                return;
 
-            try
-            {
-                await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
 
-                // Connect to device
-                await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-                await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
 
-                // Initialize BLEDeviceDetails
-                Globals.CurrentDevice = new BLEDeviceDetails
-                {
-                    Device = selectedDevice,
-                    SerialNumber = selectedDevice.Id.ToString(),
-                    Status = "Connected",
-                    Puffs = new List<PuffData>(),
-                    TotalPuffCount = 0,
-                    PuffCountLeft = 0,
-                };
 
-                var deviceDetails = Globals.CurrentDevice;
+        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
+        //{
+        //    if (e.Item is not IDevice selectedDevice)
+        //        return;
 
-                // Discover services & characteristics
-                var services = await selectedDevice.GetServicesAsync();
+        //    try
+        //    {
+        //        await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
 
-                foreach (var service in services)
-                {
-                    var characteristics = await service.GetCharacteristicsAsync();
+        //        // Connect to device
+        //        await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
+        //        await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
 
-                    foreach (var characteristic in characteristics)
-                    {
-                        if (!characteristic.CanRead)
-                            continue;
+        //        // Initialize BLEDeviceDetails
+        //        Globals.CurrentDevice = new BLEDeviceDetails
+        //        {
+        //            Device = selectedDevice,
+        //            SerialNumber = selectedDevice.Id.ToString(),
+        //            Status = "Connected",
+        //            Puffs = new List<PuffData>(),
+        //            TotalPuffCount = 0,
+        //            PuffCountLeft = 0,
+        //        };
 
-                        try
-                        {
-                            bool moreData = true;
+        //        var deviceDetails = Globals.CurrentDevice;
 
-                            while (moreData)
-                            {
-                                var (data, resultCode) = await characteristic.ReadAsync();
-                                if (resultCode != 0 || data == null || data.Length == 0)
-                                {
-                                    moreData = false;
-                                    continue;
-                                }
+        //        // Discover services & characteristics
+        //        var services = await selectedDevice.GetServicesAsync();
 
-                                string textValue = Encoding.UTF8.GetString(data);
-                                string[] strSplit = textValue.Split(',');
+        //        foreach (var service in services)
+        //        {
+        //            var characteristics = await service.GetCharacteristicsAsync();
 
-                                // Make sure CSV has enough fields
-                                if (strSplit.Length > 10)
-                                {
-                                    // Parse start time
-                                    if (!strSplit[1].Contains("0/0/2000") &&
-                                        DateTime.TryParseExact(strSplit[1], "M/d/yyyy H:m:s",
-                                            CultureInfo.InvariantCulture,
-                                            DateTimeStyles.None, out DateTime start))
-                                    {
-                                        start = start.ToUniversalTime();
+        //            foreach (var characteristic in characteristics)
+        //            {
+        //                if (!characteristic.CanRead)
+        //                    continue;
 
-                                        // Parse duration
-                                        double durationSeconds = 0;
-                                        if (double.TryParse(strSplit[9], out double d))
-                                            durationSeconds = d;
+        //                try
+        //                {
+        //                    bool moreData = true;
 
-                                        DateTime end = start.AddSeconds(durationSeconds);
+        //                    while (moreData)
+        //                    {
+        //                        var (data, resultCode) = await characteristic.ReadAsync();
+        //                        if (resultCode != 0 || data == null || data.Length == 0)
+        //                        {
+        //                            moreData = false;
+        //                            continue;
+        //                        }
 
-                                        // Parse angles
-                                        double xAngle = strSplit.Length >= 12 && double.TryParse(strSplit[11], out double x) ? x : 0;
-                                        double yAngle = strSplit.Length >= 13 && double.TryParse(strSplit[12], out double y) ? y : 0;
-                                        double zAngle = strSplit.Length >= 14 && double.TryParse(strSplit[13], out double z) ? z : 0;
+        //                        string textValue = Encoding.UTF8.GetString(data);
+        //                        string[] strSplit = textValue.Split(',');
 
-                                        // Raw string for legacy/logging
-                                        string rawData = $"{deviceDetails.SerialNumber}, {start:yyyy-MM-dd HH:mm:ss}, {strSplit[2]}, {strSplit[3]}, {strSplit[4]}, {strSplit[6]}, {strSplit[5]}, {strSplit[8]}, {strSplit[7]}, {end:yyyy-MM-dd HH:mm:ss}, {strSplit[9]}, {deviceDetails.VBat}, 0";
+        //                        // Make sure CSV has enough fields
+        //                        if (strSplit.Length > 10)
+        //                        {
+        //                            // Parse start time
+        //                            if (!strSplit[1].Contains("0/0/2000") &&
+        //                                DateTime.TryParseExact(strSplit[1], "M/d/yyyy H:m:s",
+        //                                    CultureInfo.InvariantCulture,
+        //                                    DateTimeStyles.None, out DateTime start))
+        //                            {
+        //                                start = start.ToUniversalTime();
 
-                                        // Add puff
-                                        deviceDetails.Puffs.Add(new PuffData
-                                        {
-                                            Start = start,
-                                            End = end,
-                                            XAngle = xAngle,
-                                            YAngle = yAngle,
-                                            ZAngle = zAngle,
-                                            RawData = rawData
-                                        });
+        //                                // Parse duration
+        //                                double durationSeconds = 0;
+        //                                if (double.TryParse(strSplit[9], out double d))
+        //                                    durationSeconds = d;
 
-                                        // Update puff counters
-                                        deviceDetails.TotalPuffCount++;
-                                        deviceDetails.PuffCountLeft = deviceDetails.TotalPuffCount;
-                                    }
-                                }
+        //                                DateTime end = start.AddSeconds(durationSeconds);
 
-                                // Check for device-specific end-of-data marker
-                                if (textValue.Contains("finish") || textValue.Contains("error"))
-                                    moreData = false;
-                            }
-                        }
-                        catch (Exception readEx)
-                        {
-                            Console.WriteLine($"Failed to read {characteristic.Id}: {readEx.Message}");
-                        }
-                    }
-                }
+        //                                // Parse angles
+        //                                double xAngle = strSplit.Length >= 12 && double.TryParse(strSplit[11], out double x) ? x : 0;
+        //                                double yAngle = strSplit.Length >= 13 && double.TryParse(strSplit[12], out double y) ? y : 0;
+        //                                double zAngle = strSplit.Length >= 14 && double.TryParse(strSplit[13], out double z) ? z : 0;
 
-                await DisplayAlert("Success", $"Device data collected. Total puffs: {deviceDetails.Puffs.Count}", "OK");
-            }
-            catch (Exception ex)
-            {
-                await DisplayAlert("Error", $"Failed to connect or read device: {ex.Message}", "OK");
-            }
-        }
+        //                                // Raw string for legacy/logging
+        //                                string rawData = $"{deviceDetails.SerialNumber}, {start:yyyy-MM-dd HH:mm:ss}, {strSplit[2]}, {strSplit[3]}, {strSplit[4]}, {strSplit[6]}, {strSplit[5]}, {strSplit[8]}, {strSplit[7]}, {end:yyyy-MM-dd HH:mm:ss}, {strSplit[9]}, {deviceDetails.VBat}, 0";
+
+        //                                // Add puff
+        //                                deviceDetails.Puffs.Add(new PuffData
+        //                                {
+        //                                    Start = start,
+        //                                    End = end,
+        //                                    XAngle = xAngle,
+        //                                    YAngle = yAngle,
+        //                                    ZAngle = zAngle,
+        //                                    RawData = rawData
+        //                                });
+
+        //                                // Update puff counters
+        //                                deviceDetails.TotalPuffCount++;
+        //                                deviceDetails.PuffCountLeft = deviceDetails.TotalPuffCount;
+        //                            }
+        //                        }
+
+        //                        // Check for device-specific end-of-data marker
+        //                        if (textValue.Contains("finish") || textValue.Contains("error"))
+        //                            moreData = false;
+        //                    }
+        //                }
+        //                catch (Exception readEx)
+        //                {
+        //                    Console.WriteLine($"Failed to read {characteristic.Id}: {readEx.Message}");
+        //                }
+        //            }
+        //        }
+
+        //        await DisplayAlert("Success", $"Device data collected. Total puffs: {deviceDetails.Puffs.Count}", "OK");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await DisplayAlert("Error", $"Failed to connect or read device: {ex.Message}", "OK");
+        //    }
+        //}
 
         private void ShowCollectedData()
         {
@@ -698,7 +808,7 @@ namespace PUBTransfer
             sb.AppendLine($"X Angle: {device.X_Angle:F2}");
             sb.AppendLine($"Y Angle: {device.Y_Angle:F2}");
             sb.AppendLine($"Z Angle: {device.Z_Angle:F2}");
-            sb.AppendLine($"Serial: {device.SerialNumber}");
+            sb.AppendLine($"Serial: {device.SerialNumber}"); //this seems to be correct
             sb.AppendLine($"Model: {device.ModelNumber}");
             sb.AppendLine($"Firmware: {device.FirmwareVersion}");
             sb.AppendLine($"Status: {device.Status}");
@@ -709,10 +819,14 @@ namespace PUBTransfer
             sb.AppendLine();
             sb.AppendLine("=== Puff Data ===");
 
-            for (int i = 0; i < device.Puffs.Count; i++)
+            //for (int i = 0; i < device.Puffs.Count; i++)
+            //{
+            //    var puff = device.Puffs[i];
+            //    sb.AppendLine($"{i + 1}: Start={puff.Start:yyyy-MM-dd HH:mm:ss}, End={puff.End:yyyy-MM-dd HH:mm:ss}, X={puff.XAngle:F2}, Y={puff.YAngle:F2}, Z={puff.ZAngle:F2}");
+            //}
+            foreach (var puff in device.Puffs)
             {
-                var puff = device.Puffs[i];
-                sb.AppendLine($"{i + 1}: Start={puff.Start:yyyy-MM-dd HH:mm:ss}, End={puff.End:yyyy-MM-dd HH:mm:ss}, X={puff.XAngle:F2}, Y={puff.YAngle:F2}, Z={puff.ZAngle:F2}");
+                sb.AppendLine(puff.ToString());
             }
 
             string output = sb.ToString();
