@@ -13,7 +13,7 @@
                    Style="{StaticResource Headline}"
                    SemanticProperties.HeadingLevel="Level1" />
             <!-- === Survey Card === -->
-            <Frame x:Name="SurveyCard"
+            <!--<Frame x:Name="SurveyCard"
                    CornerRadius="12"
                    Padding="15"
                    Margin="15"
@@ -21,23 +21,23 @@
                    HasShadow="True">
                 <VerticalStackLayout Spacing="12">
                     
-            <!-- Title -->
+            --><!-- Title --><!--
             <Label Text="Survey"
                            FontSize="24"
                            TextColor="#f5f5f5"
                            FontFamily="sans-serif-medium"
                            Margin="5,0"/>
-            <!-- Divider Line -->
+            --><!-- Divider Line --><!--
             <BoxView HeightRequest="2"
                              BackgroundColor="#f5f5f5"/>
-            <!-- Survey Status -->
+            --><!-- Survey Status --><!--
             <Label x:Name="lblSurvey"
                         FontSize="18"
                         TextColor="#f5f5f5"
                         FontFamily="sans-serif-medium"
                         HorizontalOptions="Center"
                         Margin="0,12"/>
-            <!-- Button -->
+            --><!-- Button --><!--
             <Button x:Name="btnSurvey"
                             Text="View Survey"
                             BackgroundColor="#3F51B5"
@@ -46,7 +46,7 @@
                             Clicked="BtnSurvey_Clicked"/>
             
                 </VerticalStackLayout>
-            </Frame>
+            </Frame>-->
             <!-- DEV/QA/PROD switches -->
             <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
                 <!--<HorizontalStackLayout Spacing="10" VerticalOptions="Center">
@@ -64,7 +64,7 @@
 
 
                 <!--radio buttons, use-->
-                <RadioButton Content="Development"
+                <!--<RadioButton Content="Development"
                     GroupName="EnvironmentGroup"
                     IsChecked="True"
                     Value="DEV"
@@ -76,20 +76,20 @@
                 <RadioButton Content="Production"
                     GroupName="EnvironmentGroup"
                     Value="PROD"
-                    CheckedChanged="OnEnvironmentChanged" />
+                    CheckedChanged="OnEnvironmentChanged" />-->
             </VerticalStackLayout>
             <!-- WebView for the survey -->
-            <WebView x:Name="webSurvey"
+            <!--<WebView x:Name="webSurvey"
                      HeightRequest="370"
                      Margin="7"
                      HorizontalOptions="Fill"
-                     VerticalOptions="Fill"/>
-            <Label x:Name="androidIdLabel" 
+                     VerticalOptions="Fill"/>-->
+            <!--<Label x:Name="androidIdLabel" 
                 TextColor="White"
                 FontSize="18" />
             <Image x:Name="qrCodeImage"
                 WidthRequest="300"
-                HeightRequest="300" />
+                HeightRequest="300" />-->
             <Button x:Name="ScanButton" 
                     Text="Scan" 
                     Clicked="OnScanClicked"/>

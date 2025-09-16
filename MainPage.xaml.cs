@@ -211,15 +211,15 @@ namespace PUBTransfer
                 {
                     if (numSurvey > 0)
                     {
-                        lblSurvey.Text = numSurvey == 1 ? "1 Survey Available" : $"{numSurvey} Surveys Available";
-                        btnSurvey.IsVisible = true;
-                        btnSurvey.Text = numSurvey == 1 ? "View Survey" : "View Surveys";
+                        //lblSurvey.Text = numSurvey == 1 ? "1 Survey Available" : $"{numSurvey} Surveys Available";
+                        //btnSurvey.IsVisible = true;
+                        //btnSurvey.Text = numSurvey == 1 ? "View Survey" : "View Surveys";
                     }
                     else
                     {
-                        lblSurvey.Text = "No Survey Available";
-                        btnSurvey.IsVisible = false;
-                        btnSurvey.Text = string.Empty;
+                        //lblSurvey.Text = "No Survey Available";
+                        //btnSurvey.IsVisible = false;
+                        //btnSurvey.Text = string.Empty;
                     }
                 });
                 // Save the current survey count in file
@@ -236,9 +236,9 @@ namespace PUBTransfer
         {
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
-                lblSurvey.Text = "No Survey Available";
-                btnSurvey.IsVisible = false;
-                btnSurvey.Text = string.Empty;
+                //lblSurvey.Text = "No Survey Available";
+                //btnSurvey.IsVisible = false;
+                //btnSurvey.Text = string.Empty;
             });
             // Reset survey file
             string fileName = "PUBserial.txt";
@@ -288,8 +288,8 @@ namespace PUBTransfer
         private void DisplayQRCode()
         {
             string deviceId = Guid.NewGuid().ToString(); // or use Preferences to persist
-            androidIdLabel.Text = $"Device ID: {deviceId}";
-            qrCodeImage.Source = GenerateQRCode(deviceId);
+            //androidIdLabel.Text = $"Device ID: {deviceId}";
+            //qrCodeImage.Source = GenerateQRCode(deviceId);
         }
         private void OnEnvironmentChanged(object sender, CheckedChangedEventArgs e)
         {
@@ -327,6 +327,7 @@ namespace PUBTransfer
                 double battery = double.Parse(strSplit[5]);
                 // og (6) is probably vbat
                 //double xAngle = double.Parse(strSplit[6]);
+                // i believe this is the one i have correct, voltage
                 double vbat = double.Parse(strSplit[6]);
                 DateTime start = DateTime.UtcNow;
                 DateTime end = start.AddSeconds(duration);
