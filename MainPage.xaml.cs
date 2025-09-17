@@ -418,7 +418,11 @@ namespace PUBTransfer
                                     {
                                         string updatedHex = BitConverter.ToString(updatedData);
                                         string updatedText = Encoding.UTF8.GetString(updatedData);
-                                        Device.BeginInvokeOnMainThread(() =>
+                                        //Device.BeginInvokeOnMainThread(() =>
+                                        //{
+                                        //    allData.AppendLine($"    [Notify] {characteristic.Id}: {updatedHex} / {updatedText}");
+                                        //});
+                                        Dispatcher.Dispatch(() =>
                                         {
                                             allData.AppendLine($"    [Notify] {characteristic.Id}: {updatedHex} / {updatedText}");
                                         });
