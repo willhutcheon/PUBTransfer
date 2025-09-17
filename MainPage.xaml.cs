@@ -22,14 +22,11 @@ namespace PUBTransfer
         public double VBat { get; set; }
         public double YAngle { get; set; }
         public double ZAngle { get; set; }
-
         public override string ToString()
         {
             return $"Puff {PuffId} | Start={Start:HH:mm:ss} | End={End:HH:mm:ss} | Duration={Duration:F2}s | Battery={Battery:F2}V | Angles=({XAngle:F2}, {YAngle:F2}, {ZAngle:F2})";
         }
     }
-
-
     public class BLEDeviceDetails
     {
         public IDevice Device { get; set; }
@@ -102,7 +99,6 @@ namespace PUBTransfer
             ScanButton.Text = "Scanning...";
             try
             {
-                // Run your scan logic
                 var permissionStatus = await RequestBluetoothPermissions();
                 if (permissionStatus != PermissionStatus.Granted)
                 {
@@ -364,151 +360,6 @@ namespace PUBTransfer
                 Console.WriteLine($"Error parsing puff data: {ex.Message}");
             }
         }
-        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        //{
-        //    if (e.Item is IDevice selectedDevice)
-        //    {
-        //        try
-        //        {
-        //            await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-        //            // Connect
-        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-        //            await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-        //            // Discover services
-        //            var services = await selectedDevice.GetServicesAsync();
-        //            foreach (var service in services)
-        //            {
-        //                Console.WriteLine($"Service: {service.Id}");
-        //                var characteristics = await service.GetCharacteristicsAsync();
-        //                foreach (var characteristic in characteristics)
-        //                {
-        //                    Console.WriteLine($"  Characteristic: {characteristic.Id}, CanRead={characteristic.CanRead}");
-        //                    if (characteristic.CanRead)
-        //                    {
-        //                        try
-        //                        {
-        //                            // Deconstruct the tuple result
-        //                            var (data, resultCode) = await characteristic.ReadAsync();
-        //                            //if (resultCode == 0 && data != null && data.Length > 0)
-        //                            //{
-        //                            //    // Try to decode as UTF-8
-        //                            //    string textValue = Encoding.UTF8.GetString(data);
-        //                            //    string hexValue = BitConverter.ToString(data);
-        //                            //    Console.WriteLine($"Read from {characteristic.Id}: {textValue}");
-        //                            //    Console.WriteLine($"Raw Hex: {hexValue}");
-        //                            //    //the last characteristic pop up is the one with all the data
-        //                            //    await DisplayAlert("Device Data",
-        //                            //        $"Characteristic {characteristic.Id}\n" +
-        //                            //        $"Text: {textValue}\n" +
-        //                            //        $"Hex: {hexValue}",
-        //                            //        "OK");
-        //                            //}
-        //                            if (resultCode == 0 && data != null && data.Length > 0)
-        //                            {
-        //                                // Decode as UTF-8
-        //                                string textValue = Encoding.UTF8.GetString(data);
-        //                                string hexValue = BitConverter.ToString(data);
-        //                                Console.WriteLine($"Read from {characteristic.Id}: {textValue}");
-        //                                Console.WriteLine($"Raw Hex: {hexValue}");
-        //                                // Parse puff data if this characteristic contains it
-        //                                if (textValue.StartsWith("PUB"))
-        //                                {
-        //                                    ParseAndStorePuff(textValue);
-        //                                }
-        //                                // Optional: still show popup for debugging
-        //                                //await DisplayAlert("Device Data",
-        //                                //    $"Characteristic {characteristic.Id}\n" +
-        //                                //    $"Text: {textValue}\n" +
-        //                                //    $"Hex: {hexValue}",
-        //                                //    "OK");
-        //                            }
-        //                            else
-        //                            {
-        //                                Console.WriteLine($"Characteristic {characteristic.Id} returned no data. ResultCode={resultCode}");
-        //                            }
-        //                        }
-        //                        catch (Exception readEx)
-        //                        {
-        //                            Console.WriteLine($"Failed to read {characteristic.Id}: {readEx.Message}");
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //            // Save device globally if you need it
-        //            Globals.serialNumber = selectedDevice.Id.ToString();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
-        //        }
-        //    }
-        //}
-
-        //use
-        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        //{
-        //    if (e.Item is IDevice selectedDevice)
-        //    {
-        //        try
-        //        {
-        //            await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-        //            // Connect
-        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-        //            await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-        //            var allData = new StringBuilder(); // collect all data here
-        //            // Discover services
-        //            var services = await selectedDevice.GetServicesAsync();
-        //            foreach (var service in services)
-        //            {
-        //                allData.AppendLine($"Service: {service.Id}");
-        //                var characteristics = await service.GetCharacteristicsAsync();
-        //                foreach (var characteristic in characteristics)
-        //                {
-        //                    allData.AppendLine($"  Characteristic: {characteristic.Id}, CanRead={characteristic.CanRead}");
-        //                    if (characteristic.CanRead)
-        //                    {
-        //                        try
-        //                        {
-        //                            var (data, resultCode) = await characteristic.ReadAsync();
-        //                            if (resultCode == 0 && data != null && data.Length > 0)
-        //                            {
-        //                                string textValue = Encoding.UTF8.GetString(data);
-        //                                string hexValue = BitConverter.ToString(data);
-        //                                allData.AppendLine($"    Text: {textValue}");
-        //                                allData.AppendLine($"    Hex: {hexValue}");
-        //                                // Parse puff data if needed
-        //                                if (textValue.StartsWith("PUB"))
-        //                                {
-        //                                    ParseAndStorePuff(textValue);
-        //                                }
-        //                            }
-        //                            else
-        //                            {
-        //                                allData.AppendLine($"    No data. ResultCode={resultCode}");
-        //                            }
-        //                        }
-        //                        catch (Exception readEx)
-        //                        {
-        //                            allData.AppendLine($"    Failed to read {characteristic.Id}: {readEx.Message}");
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //            // Show all collected data in one popup
-        //            await DisplayAlert("Device Data", allData.ToString(), "OK");
-        //            // Save device globally if you need it
-        //            Globals.serialNumber = selectedDevice.Id.ToString();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
-        //        }
-        //    }
-        //}
-
-
-
-
         private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
         {
             if (e.Item is IDevice selectedDevice)
