@@ -828,6 +828,8 @@ namespace PUBTransfer
         //    }
         //}
 
+
+        //you need to work on stuff in this function
         private async Task SetupVuseProCommunication(ICharacteristic characteristic)
         {
             try
@@ -852,10 +854,16 @@ namespace PUBTransfer
                                 if (resultCode == 0 && data != null && data.Length > 0)
                                 {
                                     string textValue = Encoding.UTF8.GetString(data);
+                                    //value in this is good, its first point (header?)
                                     Console.WriteLine($"[VUSE PRO Setup] Received: {textValue}");
 
-                                    if (textValue.StartsWith("2,")) // PUB Header
+                                    //if (textValue.StartsWith("2,")) // PUB Header
+                                    //this looks better
+                                    if (textValue.StartsWith("PUB"))
                                     {
+                                        //this now hits for a break
+                                        //so now you need to make this thing start reading what the pubs got by subscribing to its updates
+                                        //grab the header, put it in the correct place, and then make ProcessIncomingData() start listening for updates
                                         ProcessIncomingData(textValue);
                                         headerReceived = true;
 
@@ -879,6 +887,8 @@ namespace PUBTransfer
                         await Task.Delay(1000); // Wait 1 second between attempts
                     }
 
+                    //this is where were ending as of now, what really needs to happen at this point is i need to start listening for (subscribe to) updates (rather than reading the characteristics)
+                    //you have the header here, put it in the right place and confirm the header like old code to proceeed with subscribing to receive the next data points
                     if (!headerReceived)
                     {
                         Console.WriteLine("[VUSE PRO Setup] Failed to receive header after maximum attempts");
@@ -1331,54 +1341,6 @@ namespace PUBTransfer
                 Console.WriteLine($"[PUB Header] Error processing header: {ex.Message}");
             }
         }
-
-
-        // fix this issue: [DOTNET] [BatchRead] Error: Object reference not set to an instance of an object.
-        //public async Task ConfirmHeaderAsync()
-        //{
-        //    try
-        //    {
-        //        //var timeStamp = Globals.VusePROFlag
-        //        //    ? DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss")
-        //        //    : DateTime.UtcNow.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss");
-        //        var timeStamp = DateTime.UtcNow.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss");
-        //        string responseString;
-        //        if (Globals.CurrentDevice.DevicePuffCount == 0)
-        //        {
-        //            //Debug.WriteLine("confirmHeader, devicePuffCount = 0, sending a 2");
-        //            responseString = $"2,{Globals.CurrentDevice.SerialNumber},{timeStamp},005";
-        //        }
-        //        else
-        //        {
-        //            //Debug.WriteLine("confirmHeader, devicePuffCount != 0, sending a 4");
-        //            responseString = $"4,{Globals.CurrentDevice.SerialNumber},{timeStamp},005";
-        //        }
-        //        // Optional delay to allow device to settle
-        //        await Task.Delay(500);
-        //        var bytesToWrite = Encoding.UTF8.GetBytes(responseString);
-        //        //if (Globals.VusePROFlag)
-        //        //{
-        //            var characteristic = Globals.CurrentDevice.PrimaryCharacteristic;
-        //            if (characteristic != null && characteristic.CanWrite)
-        //            {
-        //                var result = await characteristic.WriteAsync(bytesToWrite);
-        //                //Debug.WriteLine($"Write Characteristic Result: {result}");
-        //                // Optionally update the UI or logs
-        //                Console.WriteLine("Wrote confirmation header to Vuse Pro");
-        //            }
-        //            else
-        //            {
-        //                //Debug.WriteLine("Characteristic not writable or null");
-        //            }
-        //        //}
-        //        // Optionally update app UI/log
-        //        Console.WriteLine($"[PUB Confirmation] >> {responseString}");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"[confirmHeader] ERROR: {ex}");
-        //    }
-        //}
 
         private void ProcessPuffHeader(string[] parts)
         {
