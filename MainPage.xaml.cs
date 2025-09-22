@@ -114,8 +114,8 @@ namespace PUBTransfer
                _bluetoothAdapter.DeviceDiscovered += (s, a) =>
                {
                    // Ensure the device has a non-null name and matches the desired prefix
-                   //if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
-                   //{
+                   if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
+                   {
                        if (!Devices.Contains(a.Device))
                        {
                            MainThread.BeginInvokeOnMainThread(() =>
@@ -123,7 +123,7 @@ namespace PUBTransfer
                                Devices.Add(a.Device);
                            });
                        }
-                   //}
+                   }
                };
                await _bluetoothAdapter.StartScanningForDevicesAsync();
                //await DisplayAlert("Scan Complete", $"{Devices.Count} devices found.", "OK");
