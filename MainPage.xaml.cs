@@ -508,6 +508,7 @@ namespace PUBTransfer
    }
 }
 
+//the current todo is find out how to confirm the header so you can get all of the data from a VUSE
 
 
 

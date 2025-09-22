@@ -21,7 +21,12 @@
 		<ApplicationTitle>PUBTransfer</ApplicationTitle>
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.pubtransfer</ApplicationId>
-	  	<!--<RuntimeIdentifier>ios-arm64</RuntimeIdentifier>-->
+
+		<!-- for git, this needs to be commented out because android doesnt like it but it has to be here for pushing to an iPhone, probably should find a way to include this in the command im -->
+	  	<!-- using to push to the iPhone which is currently dotnet build -t:Run -f net8.0-ios -p:_DeviceName="Will's iPhone" -->
+		<!-- use dotnet build -t:Run -f net8.0-ios -p:RuntimeIdentifier=ios-arm64 -p:_DeviceName="Will's iPhone" -->
+		<!-- <RuntimeIdentifier>ios-arm64</RuntimeIdentifier> -->
+
   		<!--<TargetFramework>net8.0-ios</TargetFramework>-->
   		<CodesignProvision>Wills Personal Phone</CodesignProvision>
   		<CodesignKey>Apple Development: Bradley Brown (MW9LV4ZM36)</CodesignKey>
