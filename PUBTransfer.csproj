@@ -21,8 +21,8 @@
 		<ApplicationTitle>PUBTransfer</ApplicationTitle>
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.pubtransfer</ApplicationId>
-	  	<RuntimeIdentifier>ios-arm64</RuntimeIdentifier>
-  		<TargetFramework>net8.0-ios</TargetFramework>
+	  	<!--<RuntimeIdentifier>ios-arm64</RuntimeIdentifier>-->
+  		<!--<TargetFramework>net8.0-ios</TargetFramework>-->
   		<CodesignProvision>Wills Personal Phone</CodesignProvision>
   		<CodesignKey>Apple Development: Bradley Brown (MW9LV4ZM36)</CodesignKey>
 		<!-- Versions -->
