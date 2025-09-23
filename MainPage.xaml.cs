@@ -1876,7 +1876,6 @@ namespace PUBTransfer
             //Console.WriteLine($"[Characteristic] {await characteristic.ReadAsync()}");
             //right now data only had PUB4825 in it, thats why it is length 7. It needs to have PUB,0065,6,100,33,6.0,4.370 in it
 
-
             var (data, result) = await characteristic.ReadAsync();
             await DisplayAlert("Connecting", $"data {data}", "OK");
             if (result == 0 && data != null && data.Length > 0)
