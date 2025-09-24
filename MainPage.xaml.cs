@@ -832,7 +832,7 @@ namespace PUBTransfer
             DevicesListView.ItemsSource = Devices;
         }
 
-        private bool IsCompleteHeader(string data)
+        private bool IsCompleteHeaderVUSE(string data)
         {
             // Check if header looks complete - adjust this logic based on the header format
             return data.Contains(",") && data.Split(',').Length >= 7; // Expecting 7 comma-separated values for VUSE
@@ -840,6 +840,7 @@ namespace PUBTransfer
 
         private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
 
+        //reading but also trying to write back here, should this be seperate steps / functions
         private async Task<string> ReadHeaderAsync(IDevice device)
         {
             var allData = new StringBuilder();
@@ -863,17 +864,17 @@ namespace PUBTransfer
                     return "Header characteristic not found.";
                 }
                 // Step 2: If writable, send confirm header first
-                if (headerChar.CanWrite)
-                {
-                    await SendConfirmHeaderAsync(
-                        headerChar,
-                        vusePROFlag: true,    // or false depending on your device
-                        devicePuffCount: 0,
-                        serialNumber: device.Id.ToString()
-                    );
+                //if (headerChar.CanWrite)
+                //{
+                    //await SendConfirmHeaderAsync(
+                    //    headerChar,
+                    //    vusePROFlag: true,    // or false depending on your device
+                    //    devicePuffCount: 0,
+                    //    serialNumber: device.Id.ToString()
+                    //);
                     // Give device time to prepare the full header
-                    await Task.Delay(200);
-                }
+                    //await Task.Delay(200);
+                //}
                 // Step 3: Try to read directly
                 if (headerChar.CanRead)
                 {
@@ -884,34 +885,34 @@ namespace PUBTransfer
                         allData.AppendLine($"[Read] Text: {textValue}");
                         allData.AppendLine($"[Read] Hex: {BitConverter.ToString(data)}");
 
-                        if (IsCompleteHeader(textValue))
+                        if (IsCompleteHeaderVUSE(textValue))
                             return textValue;
                     }
                 }
                 // Step 4: Fallback to notifications
-                if (headerChar.CanUpdate)
-                {
-                    var tcs = new TaskCompletionSource<string>();
-                    var buffer = new StringBuilder();
-                    headerChar.ValueUpdated += (s, args) =>
-                    {
-                        var updatedData = args.Characteristic.Value;
-                        if (updatedData != null && updatedData.Length > 0)
-                        {
-                            string updatedText = Encoding.UTF8.GetString(updatedData);
-                            buffer.Append(updatedText);
+                //if (headerChar.CanUpdate)
+                //{
+                //    var tcs = new TaskCompletionSource<string>();
+                //    var buffer = new StringBuilder();
+                //    headerChar.ValueUpdated += (s, args) =>
+                //    {
+                //        var updatedData = args.Characteristic.Value;
+                //        if (updatedData != null && updatedData.Length > 0)
+                //        {
+                //            string updatedText = Encoding.UTF8.GetString(updatedData);
+                //            buffer.Append(updatedText);
 
-                            if (IsCompleteHeader(buffer.ToString()))
-                                tcs.TrySetResult(buffer.ToString());
-                        }
-                    };
-                    await headerChar.StartUpdatesAsync();
-                    var completeHeader = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task
-                        ? await tcs.Task
-                        : "Timeout waiting for complete header";
-                    await headerChar.StopUpdatesAsync();
-                    return completeHeader;
-                }
+                //            if (IsCompleteHeader(buffer.ToString()))
+                //                tcs.TrySetResult(buffer.ToString());
+                //        }
+                //    };
+                //    await headerChar.StartUpdatesAsync();
+                //    var completeHeader = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task
+                //        ? await tcs.Task
+                //        : "Timeout waiting for complete header";
+                //    await headerChar.StopUpdatesAsync();
+                //    return completeHeader;
+                //}
                 return "Header characteristic does not support Read or Update.";
             }
             catch (Exception ex)
@@ -921,6 +922,7 @@ namespace PUBTransfer
         }
 
         //get this working, this is what youre fixing now
+        //received header, need to acknowledge it now
         private async Task AckHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -981,43 +983,44 @@ namespace PUBTransfer
                     Globals.CurrentDevice = _currentDevice;
                     await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
                     // === Step 1: Read the full header ===
-                    var header = await ReadHeaderAsync(selectedDevice);  // NEW: device passed in
+                    //all this function does is gett tht header data, noting is said back to the pub here
+                    var header = await ReadHeaderAsync(selectedDevice);
                     await DisplayAlert("Header Data", header, "OK");
-                    if (!IsCompleteHeader(header))
+                    if (!IsCompleteHeaderVUSE(header))
                     {
                         throw new Exception("Incomplete header received.");
                     }
-                    var parts = header.Split(',');
-                    string serial = parts[1];
-                    int batchSize = int.Parse(parts[3]);   // Batch_Size
-                    int puffCount = int.Parse(parts[4]);   // Puff_Count
+                    //var parts = header.Split(',');
+                    //string serial = parts[1];
+                    //int batchSize = int.Parse(parts[3]);   // Batch_Size
+                    //int puffCount = int.Parse(parts[4]);   // Puff_Count
                     // === Step 2: Find a writable characteristic for commands ===
-                    ICharacteristic writeChar = null;
-                    var services = await selectedDevice.GetServicesAsync();
-                    foreach (var service in services)
-                    {
-                        var characteristics = await service.GetCharacteristicsAsync();
-                        writeChar = characteristics.FirstOrDefault(c => c.CanWrite);
-                        if (writeChar != null) break;
-                    }
-                    if (writeChar == null)
-                        throw new Exception("No writable characteristic found for ACK and data transfer.");
+                    //ICharacteristic writeChar = null;
+                    //var services = await selectedDevice.GetServicesAsync();
+                    //foreach (var service in services)
+                    //{
+                        //var characteristics = await service.GetCharacteristicsAsync();
+                        //writeChar = characteristics.FirstOrDefault(c => c.CanWrite);
+                        //if (writeChar != null) break;
+                    //}
+                    //if (writeChar == null)
+                        //throw new Exception("No writable characteristic found for ACK and data transfer.");
                     // === Step 3: Acknowledge the header ===
-                    await AckHeaderAsync(writeChar, serial);
+                    //await AckHeaderAsync(writeChar, serial);
                     // === Step 4: Read the data batch ===
-                    var dataPoints = await ReadDataBatchAsync(writeChar, batchSize);
+                    //var dataPoints = await ReadDataBatchAsync(writeChar, batchSize);
                     // === Step 5: Confirm the batch ===
-                    await ConfirmBatchAsync(writeChar, batchSize);
-                    Console.WriteLine($"[Transfer Complete] {dataPoints.Count} data points received.");
+                    //await ConfirmBatchAsync(writeChar, batchSize);
+                    //Console.WriteLine($"[Transfer Complete] {dataPoints.Count} data points received.");
                 }
                 catch (Exception ex)
                 {
                     await DisplayAlert("Error", $"Failed to connect or read data: {ex.Message}", "OK");
                 }
-                finally
-                {
-                    _isCollectingData = false;
-                }
+                //finally
+                //{
+                    //_isCollectingData = false;
+                //}
             }
         }
 
