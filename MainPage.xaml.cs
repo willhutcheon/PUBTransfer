@@ -749,7 +749,6 @@ namespace PUBTransfer
         public double Current { get; set; }
         public double Power { get; set; }
         public int RTD { get; set; }
-
         public override string ToString()
         {
             return $"Puff {PuffId} | Start={Start:HH:mm:ss} | Duration={Duration:F2}s | Battery={Battery:F2}V | Pressure={Pressure:F2}";
@@ -799,18 +798,15 @@ namespace PUBTransfer
         public double VBat { get; set; }
         public DateTime PuffDateTime { get; set; }
         public DateTime TransferTime { get; set; }
-
         // For different model support
         public double X_Angle { get; set; }
         public double Y_Angle { get; set; }
         public double Z_Angle { get; set; }
-
         public List<PuffData> Puffs { get; set; } = new List<PuffData>();
         public string[] Events { get; set; } = new string[500];
         public int EventTotalCount { get; set; }
         public int EventBatchSize { get; set; }
         public int EventCounter { get; set; }
-
         // Raw data storage like Xamarin version
         public string[] PubRawData { get; set; }
     }
@@ -836,340 +832,22 @@ namespace PUBTransfer
             DevicesListView.ItemsSource = Devices;
         }
 
-
-
-
-
-
-
-        //new stuff testing
-        //make this read the whole header, all its getting now is PUB4825
-        //the pub is sending the header in chunks, right now you only catch the first chunk but you need to get all of it
-        //private async Task<string> ReadHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    //Console.WriteLine($"[Characteristic] {await characteristic.ReadAsync()}");
-        //    //right now data only had PUB4825 in it, thats why it is length 7. It needs to have PUB,0065,6,100,33,6.0,4.370 in it
-
-        //    var (data, result) = await characteristic.ReadAsync();
-        //    await DisplayAlert("Connecting", $"data {data}", "OK");
-        //    if (result == 0 && data != null && data.Length > 0)
-        //    {
-        //        string header = Encoding.UTF8.GetString(data);
-        //        Console.WriteLine($"[Header Received] {header}");
-        //        return header;
-        //    }
-        //    throw new Exception("Failed to read header.");
-        //}
-
-
-        //if (characteristic.CanRead)
-        //{
-        //  try
-        //  {
-        //      var (data, resultCode) = await characteristic.ReadAsync();
-        //      if (resultCode == 0 && data != null && data.Length > 0)
-        //      {
-        //          string textValue = Encoding.UTF8.GetString(data);
-        //          string hexValue = BitConverter.ToString(data);
-        //          allData.AppendLine($" [Read] Text: {textValue}");
-        //          allData.AppendLine($" [Read] Hex: {hexValue}");
-        //          if (textValue.StartsWith("PUB")) { ParseAndStorePuff(textValue);
-        //      }
-        //      else
-        //      {
-        //          allData.AppendLine($" No data. ResultCode={resultCode}");
-        //      }
-        //  }
-        //  catch (Exception readEx)
-        //  {
-        //      allData.AppendLine($" Failed to read {characteristic.Id}: {readEx.Message}");
-        //  }
-        //}
-
-
-
-        //private async Task<string> ReadHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    var allData = new StringBuilder();
-
-        //    if (characteristic.CanRead)
-        //    {
-        //        try
-        //        {
-        //            // Optional short delay to allow device to prepare data
-        //            await Task.Delay(100);
-
-        //            var (data, resultCode) = await characteristic.ReadAsync();
-
-        //            if (resultCode == 0 && data != null && data.Length > 0)
-        //            {
-        //                string textValue = Encoding.UTF8.GetString(data);
-        //                string hexValue = BitConverter.ToString(data);
-
-        //                allData.AppendLine($" [Read] Text: {textValue}");
-        //                allData.AppendLine($" [Read] Hex: {hexValue}");
-        //            }
-        //            else
-        //            {
-        //                allData.AppendLine($" No data. ResultCode={resultCode}");
-        //            }
-        //        }
-        //        catch (Exception readEx)
-        //        {
-        //            allData.AppendLine($" Failed to read {characteristic.Id}: {readEx.Message}");
-        //        }
-        //    }
-        //    else
-        //    {
-        //        allData.AppendLine($" Characteristic {characteristic.Id} cannot be read.");
-        //    }
-
-        //    // Return everything you accumulated in allData
-        //    Console.WriteLine($"[All Data] {allData}");
-        //    return allData.ToString();
-        //}
-
-
-
-
-
-        //private async Task<string> ReadHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    var allData = new StringBuilder();
-        //    var headerBuffer = new StringBuilder();
-        //    var tcs = new TaskCompletionSource<string>();
-
-        //    //this doesnt need to be update it needs to be read, or something, evaluated as false at runtime
-        //    if (characteristic.CanUpdate)
-        //    //if (characteristic.CanRead)
-        //    {
-        //        try
-        //        {
-        //            // Subscribe to notifications first
-        //            characteristic.ValueUpdated += (s, args) =>
-        //            {
-        //                var updatedData = args.Characteristic.Value;
-        //                if (updatedData != null && updatedData.Length > 0)
-        //                {
-        //                    string updatedText = Encoding.UTF8.GetString(updatedData);
-        //                    headerBuffer.Append(updatedText);
-
-        //                    // Check if complete
-        //                    if (IsCompleteHeader(headerBuffer.ToString()))
-        //                    {
-        //                        tcs.SetResult(headerBuffer.ToString());
-        //                    }
-        //                }
-        //            };
-
-        //            await characteristic.StartUpdatesAsync();
-
-        //            // Send your confirm header to trigger the response
-        //            // (Your SendConfirmHeaderAsync call here)
-        //            if (characteristic.CanWrite) // <-- adjust if your library uses different flag
-        //            {
-        //                await SendConfirmHeaderAsync(
-        //                    characteristic,
-        //                    vusePROFlag: true,                    // or false depending on device type
-        //                    devicePuffCount: 0,                    // replace with actual puff count if you track it
-        //                    //serialNumber: selectedDevice.Id.ToString()
-        //                    serialNumber: "4825"
-        //                );
-        //            }
-
-        //            // Wait for complete header (with timeout)
-        //            var completeHeader = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task
-        //                ? await tcs.Task
-        //                : "Timeout waiting for complete header";
-
-        //            allData.AppendLine($" [Notification] Complete Text: {completeHeader}");
-
-        //            await characteristic.StopUpdatesAsync();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            allData.AppendLine($" Failed to read via notifications: {ex.Message}");
-        //        }
-        //    }
-
-        //    return allData.ToString();
-        //}
         private bool IsCompleteHeader(string data)
         {
-            // Check if header looks complete - adjust this logic based on your header format
-            return data.Contains(",") && data.Split(',').Length >= 7; // Expecting 7 comma-separated values
+            // Check if header looks complete - adjust this logic based on the header format
+            return data.Contains(",") && data.Split(',').Length >= 7; // Expecting 7 comma-separated values for VUSE
         }
-        //private async Task<string> ReadHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    var allData = new StringBuilder();
-
-        //    try
-        //    {
-        //        if (characteristic.CanRead)
-        //        {
-        //            var (data, resultCode) = await characteristic.ReadAsync();
-        //            if (resultCode == 0 && data != null && data.Length > 0)
-        //            {
-        //                string textValue = Encoding.UTF8.GetString(data);
-
-        //                Console.WriteLine($"[Header] Text: {textValue}");
-
-        //                allData.AppendLine($"[Read] Text: {textValue}");
-        //                allData.AppendLine($"[Read] Hex: {BitConverter.ToString(data)}");
-
-        //                return textValue; // header as string
-        //            }
-        //            else
-        //            {
-        //                return $"No data. ResultCode={resultCode}";
-        //            }
-        //        }
-        //        else if (characteristic.CanUpdate)
-        //        {
-        //            // fallback to notifications if supported
-        //            var tcs = new TaskCompletionSource<string>();
-        //            var buffer = new StringBuilder();
-
-        //            characteristic.ValueUpdated += (s, args) =>
-        //            {
-        //                var updatedData = args.Characteristic.Value;
-        //                if (updatedData != null && updatedData.Length > 0)
-        //                {
-        //                    string updatedText = Encoding.UTF8.GetString(updatedData);
-        //                    buffer.Append(updatedText);
-
-        //                    if (IsCompleteHeader(buffer.ToString()))
-        //                        tcs.TrySetResult(buffer.ToString());
-        //                }
-        //            };
-
-        //            await characteristic.StartUpdatesAsync();
-
-        //            var completeHeader = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task
-        //                ? await tcs.Task
-        //                : "Timeout waiting for complete header";
-
-        //            await characteristic.StopUpdatesAsync();
-
-        //            return completeHeader;
-        //        }
-        //        else
-        //        {
-        //            return "Characteristic does not support Read or Update.";
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return $"Error reading header: {ex.Message}";
-        //    }
-        //}
 
         private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
-
-        //private async Task<string> ReadHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    var allData = new StringBuilder();
-
-        //    try
-        //    {
-        //        // Step 1: If writable, send confirm header first
-        //        if (characteristic.CanWrite)
-        //        {
-        //            await SendConfirmHeaderAsync(
-        //                characteristic,
-        //                vusePROFlag: true,    // or false depending on device
-        //                devicePuffCount: 0,
-        //                serialNumber: "4825"  // replace with actual serial if needed
-        //            );
-
-        //            // Give the device a moment to prepare the full header
-        //            await Task.Delay(200);
-        //        }
-
-        //        // Step 2: Try a read first
-        //        //if (characteristic.CanRead)
-        //        //{
-        //        //    var (data, resultCode) = await characteristic.ReadAsync();
-        //        //    if (resultCode == 0 && data != null && data.Length > 0)
-        //        //    {
-        //        //        string textValue = Encoding.UTF8.GetString(data);
-        //        //        allData.AppendLine($"[Read] Text: {textValue}");
-        //        //        allData.AppendLine($"[Read] Hex: {BitConverter.ToString(data)}");
-
-        //        //        // If this already looks like a full header, return it
-        //        //        if (IsCompleteHeader(textValue))
-        //        //            return textValue;
-        //        //    }
-        //        //}
-        //        //here you need to find the characteristic with characteristic id fd5abba0-3935-11e5-85a6-0002a5d5c51b and get its value, it is the header data
-        //        if (characteristic.Id == HeaderCharacteristicId && characteristic.CanRead)
-        //        {
-        //            var (data, resultCode) = await characteristic.ReadAsync();
-        //            if (resultCode == 0 && data != null && data.Length > 0)
-        //            {
-        //                string textValue = Encoding.UTF8.GetString(data);
-        //                allData.AppendLine($"[Read] Text: {textValue}");
-        //                allData.AppendLine($"[Read] Hex: {BitConverter.ToString(data)}");
-
-        //                if (IsCompleteHeader(textValue))
-        //                    return textValue;  // Only return if it's the proper header
-        //            }
-        //        }
-
-
-
-
-
-        //        // Step 3: Fallback to notifications if needed
-        //        //didnt hit, what i need to do is find out how to read fd5abba0-3935-11e5-85a6-0002a5d5c51b and if i need to do a write like above to get to it
-        //        if (characteristic.CanUpdate)
-        //        {
-        //            var tcs = new TaskCompletionSource<string>();
-        //            var buffer = new StringBuilder();
-
-        //            characteristic.ValueUpdated += (s, args) =>
-        //            {
-        //                var updatedData = args.Characteristic.Value;
-        //                if (updatedData != null && updatedData.Length > 0)
-        //                {
-        //                    string updatedText = Encoding.UTF8.GetString(updatedData);
-        //                    buffer.Append(updatedText);
-
-        //                    if (IsCompleteHeader(buffer.ToString()))
-        //                        tcs.TrySetResult(buffer.ToString());
-        //                }
-        //            };
-
-        //            await characteristic.StartUpdatesAsync();
-
-        //            var completeHeader = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task
-        //                ? await tcs.Task
-        //                : "Timeout waiting for complete header";
-
-        //            await characteristic.StopUpdatesAsync();
-
-        //            return completeHeader;
-        //        }
-
-        //        return "Characteristic does not support Read or Update.";
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return $"Error reading header: {ex.Message}";
-        //    }
-        //}
-        //private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
 
         private async Task<string> ReadHeaderAsync(IDevice device)
         {
             var allData = new StringBuilder();
-
             try
             {
                 // Step 1: Get services and find the header characteristic
                 var services = await device.GetServicesAsync();
                 ICharacteristic headerChar = null;
-
                 foreach (var service in services)
                 {
                     var characteristics = await service.GetCharacteristicsAsync();
@@ -1180,12 +858,10 @@ namespace PUBTransfer
                         break;
                     }
                 }
-
                 if (headerChar == null)
                 {
                     return "Header characteristic not found.";
                 }
-
                 // Step 2: If writable, send confirm header first
                 if (headerChar.CanWrite)
                 {
@@ -1195,11 +871,9 @@ namespace PUBTransfer
                         devicePuffCount: 0,
                         serialNumber: device.Id.ToString()
                     );
-
                     // Give device time to prepare the full header
                     await Task.Delay(200);
                 }
-
                 // Step 3: Try to read directly
                 if (headerChar.CanRead)
                 {
@@ -1214,13 +888,11 @@ namespace PUBTransfer
                             return textValue;
                     }
                 }
-
                 // Step 4: Fallback to notifications
                 if (headerChar.CanUpdate)
                 {
                     var tcs = new TaskCompletionSource<string>();
                     var buffer = new StringBuilder();
-
                     headerChar.ValueUpdated += (s, args) =>
                     {
                         var updatedData = args.Characteristic.Value;
@@ -1233,18 +905,13 @@ namespace PUBTransfer
                                 tcs.TrySetResult(buffer.ToString());
                         }
                     };
-
                     await headerChar.StartUpdatesAsync();
-
                     var completeHeader = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task
                         ? await tcs.Task
                         : "Timeout waiting for complete header";
-
                     await headerChar.StopUpdatesAsync();
-
                     return completeHeader;
                 }
-
                 return "Header characteristic does not support Read or Update.";
             }
             catch (Exception ex)
@@ -1253,69 +920,7 @@ namespace PUBTransfer
             }
         }
 
-
-
-
-
-
-
-
-
-        //private TaskCompletionSource<string> _headerTcs;
-
-        //private async Task<string> ReadHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    _headerTcs = new TaskCompletionSource<string>();
-
-        //    void Handler(object sender, CharacteristicUpdatedEventArgs args)
-        //    {
-        //        string chunk = Encoding.UTF8.GetString(args.Characteristic.Value);
-        //        Console.WriteLine($"[Header Chunk] {chunk}");
-
-        //        // accumulate until you have all 7 fields (6 commas)
-        //        if (chunk.Count(c => c == ',') >= 6)
-        //        {
-        //            characteristic.ValueUpdated -= Handler;
-        //            _headerTcs.SetResult(chunk);
-        //        }
-        //    }
-
-        //    characteristic.ValueUpdated += Handler;
-        //    await characteristic.StartUpdatesAsync(); // subscribe to notifications
-
-        //    return await _headerTcs.Task;
-        //}
-        //private async Task<string> ReadHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    string header = "";
-        //    int maxAttempts = 5;
-
-        //    for (int i = 0; i < maxAttempts; i++)
-        //    {
-        //        var (data, result) = await characteristic.ReadAsync();
-        //        if (result == 0 && data != null && data.Length > 0)
-        //        {
-        //            header += Encoding.UTF8.GetString(data);
-
-        //            // Check if we have all 7 fields (6 commas)
-        //            if (header.Count(c => c == ',') >= 6)
-        //            {
-        //                Console.WriteLine($"[Full Header Received] {header}");
-        //                return header;
-        //            }
-        //        }
-
-        //        // Small delay before trying again
-        //        await Task.Delay(100);
-        //    }
-
-        //    throw new Exception("Failed to read full header after multiple attempts.");
-        //}
-
-
-
-
-
+        //get this working, this is what youre fixing now
         private async Task AckHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -1324,6 +929,7 @@ namespace PUBTransfer
             await characteristic.WriteAsync(payload);
             Console.WriteLine($"[Header Ack Sent] {responseString}");
         }
+
         private async Task<List<string>> ReadDataBatchAsync(ICharacteristic characteristic, int expectedCount)
         {
             var dataPoints = new List<string>();
@@ -1344,6 +950,7 @@ namespace PUBTransfer
             }
             return dataPoints;
         }
+
         private async Task ConfirmBatchAsync(ICharacteristic characteristic, int batchSize)
         {
             // Protocol: "1,<BatchSize>" tells device to erase the uploaded data
@@ -1353,134 +960,16 @@ namespace PUBTransfer
             Console.WriteLine($"[Batch Confirm Sent] {responseString}");
         }
 
-
-
-
-        //if (characteristic.CanRead)
-        //{
-        //  try
-        //  {
-        //      var (data, resultCode) = await characteristic.ReadAsync();
-        //      if (resultCode == 0 && data != null && data.Length > 0)
-        //      {
-        //          string textValue = Encoding.UTF8.GetString(data);
-        //          string hexValue = BitConverter.ToString(data);
-        //          allData.AppendLine($" [Read] Text: {textValue}");
-        //          allData.AppendLine($" [Read] Hex: {hexValue}");
-        //          if (textValue.StartsWith("PUB")) { ParseAndStorePuff(textValue);
-        //      }
-        //      else
-        //      {
-        //          allData.AppendLine($" No data. ResultCode={resultCode}");
-        //      }
-        //  }
-        //  catch (Exception readEx)
-        //  {
-        //      allData.AppendLine($" Failed to read {characteristic.Id}: {readEx.Message}");
-        //  }
-        //}
-        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        //{
-        //    if (e.Item is IDevice selectedDevice && !_isCollectingData)
-        //    {
-        //        _isCollectingData = true;
-
-        //        try
-        //        {
-        //            await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-
-        //            // 1. Connect to device
-        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-
-
-
-        //            // Ensure the device name is long enough before slicing
-        //            //string serialNumber = selectedDevice.Name.Length > 3
-        //            //    ? selectedDevice.Name.Substring(3)
-        //            //    : string.Empty;
-
-        //            //_currentDevice = new BLEDeviceDetails
-        //            //{
-        //            //    Device = selectedDevice,
-        //            //    Status = "Connected",
-        //            //    SerialNumber = serialNumber, //only works for pubs with a name formatted like a VUSE Pro
-        //            //    TransferTime = DateTime.UtcNow
-        //            //};
-        //            //put a break here to see what the structure of this is
-        //            _currentDevice = new BLEDeviceDetails
-        //            {
-        //                Device = selectedDevice,
-        //                Status = "Connected",
-        //                SerialNumber = selectedDevice.Name.Substring(3), // Extract from PUBxxxx
-        //                TransferTime = DateTime.UtcNow
-        //            };
-
-
-        //            Globals.CurrentDevice = _currentDevice;
-
-        //            await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-
-        //            // 2. Discover services and find the characteristic
-        //            var services = await selectedDevice.GetServicesAsync();
-        //            foreach (var service in services)
-        //            {
-        //                var characteristics = await service.GetCharacteristicsAsync();
-
-        //                // Find the characteristic that supports both Read + Write
-        //                var commChar = characteristics.FirstOrDefault(c => c.CanRead && c.CanWrite);
-        //                if (commChar != null)
-        //                {
-        //                    // === Step 1: Read Header ===
-        //                    //this just has the first point in the header in it but the code below assumes it was all of the data and then goes on to try to split that by comma
-        //                    //if you make sure the header has the rest of the data in it here and not the first value, this will likely work
-        //                    var header = await ReadHeaderAsync(commChar);
-        //                    await DisplayAlert("Error", $"Header: {header}", "fuck off");
-        //                    var parts = header.Split(',');
-        //                    string serial = parts[1];
-        //                    int batchSize = int.Parse(parts[3]);   // Batch_Size
-        //                    int puffCount = int.Parse(parts[4]);   // Puff_Count
-
-        //                    // === Step 2: Ack Header ===
-        //                    await AckHeaderAsync(commChar, serial);
-
-        //                    // === Step 3: Read Data Points ===
-        //                    var dataPoints = await ReadDataBatchAsync(commChar, batchSize);
-
-        //                    // === Step 4: Confirm Batch ===
-        //                    await ConfirmBatchAsync(commChar, batchSize);
-
-        //                    // (Optional) Process/store results
-        //                    Console.WriteLine($"[Transfer Complete] {dataPoints.Count} data points received.");
-
-        //                    break; // done with this service
-        //                }
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "fuck off");
-        //        }
-        //        finally
-        //        {
-        //            _isCollectingData = false;
-        //        }
-        //    }
-        //}
-
-
         private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
         {
             if (e.Item is IDevice selectedDevice && !_isCollectingData)
             {
                 _isCollectingData = true;
-
                 try
                 {
                     await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-
                     // 1. Connect to the device
                     await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-
                     // Store current device details
                     _currentDevice = new BLEDeviceDetails
                     {
@@ -1490,23 +979,18 @@ namespace PUBTransfer
                         TransferTime = DateTime.UtcNow
                     };
                     Globals.CurrentDevice = _currentDevice;
-
                     await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-
                     // === Step 1: Read the full header ===
                     var header = await ReadHeaderAsync(selectedDevice);  // NEW: device passed in
                     await DisplayAlert("Header Data", header, "OK");
-
                     if (!IsCompleteHeader(header))
                     {
                         throw new Exception("Incomplete header received.");
                     }
-
                     var parts = header.Split(',');
                     string serial = parts[1];
                     int batchSize = int.Parse(parts[3]);   // Batch_Size
                     int puffCount = int.Parse(parts[4]);   // Puff_Count
-
                     // === Step 2: Find a writable characteristic for commands ===
                     ICharacteristic writeChar = null;
                     var services = await selectedDevice.GetServicesAsync();
@@ -1516,19 +1000,14 @@ namespace PUBTransfer
                         writeChar = characteristics.FirstOrDefault(c => c.CanWrite);
                         if (writeChar != null) break;
                     }
-
                     if (writeChar == null)
                         throw new Exception("No writable characteristic found for ACK and data transfer.");
-
                     // === Step 3: Acknowledge the header ===
                     await AckHeaderAsync(writeChar, serial);
-
                     // === Step 4: Read the data batch ===
                     var dataPoints = await ReadDataBatchAsync(writeChar, batchSize);
-
                     // === Step 5: Confirm the batch ===
                     await ConfirmBatchAsync(writeChar, batchSize);
-
                     Console.WriteLine($"[Transfer Complete] {dataPoints.Count} data points received.");
                 }
                 catch (Exception ex)
@@ -1542,168 +1021,12 @@ namespace PUBTransfer
             }
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        //{
-        //    if (e.Item is IDevice selectedDevice && !_isCollectingData)
-        //    {
-        //        _isCollectingData = true;
-
-        //        try
-        //        {
-        //            await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-
-        //            // Connect to device
-        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-
-        //            // Initialize device details
-        //            _currentDevice = new BLEDeviceDetails
-        //            {
-        //                Device = selectedDevice,
-        //                Status = "Connected",
-        //                SerialNumber = selectedDevice.Name.Substring(3), // Extract from PUB1234
-        //                TransferTime = DateTime.UtcNow
-        //            };
-
-        //            Globals.CurrentDevice = _currentDevice;
-
-        //            await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-
-        //            // Discover services
-        //            var services = await selectedDevice.GetServicesAsync();
-        //            ICharacteristic commChar = null;
-
-        //            foreach (var service in services)
-        //            {
-        //                var characteristics = await service.GetCharacteristicsAsync();
-
-        //                // Find the writable characteristic used for PUB handshakes
-        //                commChar = characteristics.FirstOrDefault(c => c.CanWrite && c.CanUpdate);
-        //                if (commChar != null)
-        //                    break;
-        //            }
-
-        //            if (commChar == null)
-        //            {
-        //                await DisplayAlert("Error", "Could not find suitable characteristic", "OK");
-        //                return;
-        //            }
-
-        //            _writeCharacteristic = commChar;
-        //            _currentDevice.PrimaryCharacteristic = commChar;
-
-        //            // Start updates to receive notifications
-        //            await commChar.StartUpdatesAsync();
-
-        //            // Send initial ACK header
-        //            await SendConfirmHeaderAsync(
-        //                commChar,
-        //                vusePROFlag: true,
-        //                devicePuffCount: 0,
-        //                serialNumber: _currentDevice.SerialNumber
-        //            );
-
-        //            // Read the full header
-        //            //stops here?
-        //            //await DisplayAlert("Error", $"commChar: {commChar}", "OK");
-        //            var header = await ReadFullHeaderAsync(commChar);
-
-        //            // Split header into fields safely
-        //            var parts = header.Split(',');
-        //            if (parts.Length < 7)
-        //            {
-        //                await DisplayAlert("Error", $"Invalid header received: {header}", "OK");
-        //                return;
-        //            }
-
-        //            // Parse the header into device info
-        //            _currentDevice.SerialNumber = parts[1];
-        //            _currentDevice.ModelNumber = int.Parse(parts[2]);
-        //            _currentDevice.BatchPuffCount = int.Parse(parts[3]);
-        //            _currentDevice.DevicePuffCount = int.Parse(parts[4]);
-        //            _currentDevice.FirmwareVersion = parts[5];
-        //            _currentDevice.VBat = double.Parse(parts[6]);
-
-        //            _currentDevice.TotalPuffCount = _currentDevice.DevicePuffCount;
-        //            _currentDevice.PuffCountLeft = _currentDevice.DevicePuffCount;
-
-        //            _logData.AppendLine($"Header received: {header}");
-
-        //            // Start the main data collection loop
-        //            await StartDataCollection(selectedDevice);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
-        //        }
-        //        finally
-        //        {
-        //            _isCollectingData = false;
-        //        }
-        //    }
-        //}
-        // New helper to accumulate header chunks
-        //this is not processing things correctly
-        //private async Task<string> ReadFullHeaderAsync(ICharacteristic characteristic)
-        //{
-        //    var tcs = new TaskCompletionSource<string>();
-        //    var buffer = new StringBuilder();
-
-        //    EventHandler<CharacteristicUpdatedEventArgs> handler = null;
-        //    handler = (s, e) =>
-        //    {
-        //        if (e.Characteristic.Id == characteristic.Id)
-        //        {
-        //            var chunk = Encoding.UTF8.GetString(e.Characteristic.Value);
-        //            buffer.Append(chunk);
-
-        //            // Header complete? (7 fields always)
-        //            if (buffer.ToString().Count(c => c == ',') >= 6)
-        //            {
-        //                characteristic.ValueUpdated -= handler;
-        //                tcs.TrySetResult(buffer.ToString());
-        //            }
-        //        }
-        //    };
-
-        //    characteristic.ValueUpdated += handler;
-
-        //    return await tcs.Task;
-        //}
-        //end new stuff testing
-
-
-
-
         //find out what format this response needs to be in
         private async Task SendConfirmHeaderAsync(ICharacteristic characteristic, bool vusePROFlag, int devicePuffCount, string serialNumber)
         {
             try
             {
                 string timeStamp;
-
                 if (vusePROFlag)
                     timeStamp = DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss"); // UTC for VusePRO
                 else
@@ -1719,7 +1042,6 @@ namespace PUBTransfer
 
                 byte[] data = Encoding.UTF8.GetBytes(responseString);
                 await characteristic.WriteAsync(data);
-
                 Console.WriteLine($"[Handshake Sent] {responseString}");
             }
             catch (Exception ex)
@@ -1728,77 +1050,14 @@ namespace PUBTransfer
             }
         }
 
-        //private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        //{
-        //    if (e.Item is IDevice selectedDevice && !_isCollectingData)
-        //    {
-        //        _isCollectingData = true;
-
-        //        try
-        //        {
-        //            await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-
-        //            // Connect to device
-        //            await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-
-        //            // Initialize device details
-        //            _currentDevice = new BLEDeviceDetails
-        //            {
-        //                Device = selectedDevice,
-        //                Status = "Connected",
-        //                SerialNumber = selectedDevice.Name.Substring(3), // Extract from PUBxxxx
-        //                TransferTime = DateTime.UtcNow
-        //            };
-
-        //            Globals.CurrentDevice = _currentDevice;
-
-        //            await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
-
-        //            // Discover services
-        //            var services = await selectedDevice.GetServicesAsync();
-        //            foreach (var service in services)
-        //            {
-        //                var characteristics = await service.GetCharacteristicsAsync();
-
-        //                // Find the writable characteristic used for PUB handshakes
-        //                var writable = characteristics.FirstOrDefault(c => c.CanWrite);
-        //                if (writable != null)
-        //                {
-        //                    // Send confirm header before starting data collection
-        //                    await SendConfirmHeaderAsync(
-        //                        writable,
-        //                        vusePROFlag: true,   // set based on your device type
-        //                        devicePuffCount: 0,   // or pull from your device object if you track it
-        //                        serialNumber: _currentDevice.SerialNumber
-        //                    );
-        //                    break; // handshake sent, no need to continue searching
-        //                }
-        //            }
-
-        //            // Start the data collection process
-        //            await StartDataCollection(selectedDevice);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            await DisplayAlert("Error", $"Failed to connect: {ex.Message}", "OK");
-        //        }
-        //        finally
-        //        {
-        //            _isCollectingData = false;
-        //        }
-        //    }
-        //}
-
         private async Task StartDataCollection(IDevice device)
         {
             try
             {
                 var services = await device.GetServicesAsync();
-
                 foreach (var service in services)
                 {
                     var characteristics = await service.GetCharacteristicsAsync();
-
                     foreach (var characteristic in characteristics)
                     {
                         // Find the primary characteristic for communication
@@ -1807,32 +1066,24 @@ namespace PUBTransfer
                             _writeCharacteristic = characteristic;
                             _currentDevice.PrimaryCharacteristic = characteristic;
                             _currentDevice.PrimaryService = service;
-
                             // Subscribe to notifications
                             characteristic.ValueUpdated += OnCharacteristicValueUpdated;
                             await characteristic.StartUpdatesAsync();
-
                             _logData.AppendLine($"Subscribed to characteristic: {characteristic.Id}");
-
                             // Start the protocol by sending an initial read or waiting for first message
-
                             //i need to send the first handshake back here, find out what it wants back (never mind handshake was already sent before this function was called)
                             break;
                         }
                     }
-
                     if (_writeCharacteristic != null)
                         break;
                 }
-
                 if (_writeCharacteristic == null)
                 {
                     await DisplayAlert("Error", "Could not find suitable characteristic", "OK");
                     return;
                 }
-
                 _logData.AppendLine("Starting data collection protocol...");
-
                 // Wait for initial header or send a trigger command
                 //the header has already been sent and the handshake was completed at this point
                 await Task.Delay(1000);
@@ -1847,12 +1098,9 @@ namespace PUBTransfer
         {
             var data = e.Characteristic.Value;
             if (data == null || data.Length == 0) return;
-
             string textValue = Encoding.UTF8.GetString(data);
             string hexValue = BitConverter.ToString(data);
-
             _logData.AppendLine($"Received: {textValue}");
-
             // Process the received data based on the protocol
             await ProcessReceivedData(textValue.Trim());
         }
@@ -1862,25 +1110,19 @@ namespace PUBTransfer
             try
             {
                 string[] strSplit = data.Split(',');
-
                 if (strSplit.Length < 2) return;
-
                 string messageType = strSplit[0].Trim();
-
                 switch (messageType)
                 {
                     case "2": // PUB Header
                         await ProcessPUBHeader(strSplit);
                         break;
-
                     case "3": // PUFF Header  
                         await ProcessPUFFHeader(strSplit);
                         break;
-
                     case "4": // Raw Data
                         await ProcessRawData(strSplit);
                         break;
-
                     case "5": // Event Data
                         await ProcessEventData(strSplit);
                         break;
@@ -1898,13 +1140,10 @@ namespace PUBTransfer
             {
                 // 2,PUB,1234,5,0,0500,5.0,3.700
                 _currentDevice.ModelNumber = Convert.ToInt32(strSplit[2].Trim());
-
                 string serial = strSplit[1].Length < 4
                     ? strSplit[1].PadLeft(4, '0')
                     : strSplit[1];
-
                 _currentDevice.SerialNumber = serial;
-
                 if (_currentDevice.ModelNumber == 2 || _currentDevice.ModelNumber == 3 || _currentDevice.ModelNumber == 5)
                 {
                     _currentDevice.EventTotalCount = Convert.ToInt32(strSplit[3].Trim());
@@ -1917,22 +1156,17 @@ namespace PUBTransfer
                 {
                     _currentDevice.BatchPuffCount = Convert.ToInt32(strSplit[3].Trim());
                 }
-
                 _currentDevice.DevicePuffCount = Convert.ToInt32(strSplit[4].Trim());
                 _currentDevice.TotalPuffCount = _currentDevice.DevicePuffCount;
                 _currentDevice.PuffCountLeft = _currentDevice.DevicePuffCount;
-
                 if (_currentDevice.ModelNumber == 2 || _currentDevice.ModelNumber == 3 || _currentDevice.ModelNumber == 5)
                     _currentDevice.PuffCountLeft++;
-
                 _currentDevice.PuffID = _currentDevice.DevicePuffCount + 1;
                 _currentDevice.PuffNum = 0;
                 _currentDevice.PubRawData = new string[_currentDevice.BatchPuffCount + 1];
                 _currentDevice.FirmwareVersion = strSplit[5].Trim();
                 _currentDevice.VBat = Convert.ToDouble(strSplit[6].Trim());
-
                 _logData.AppendLine($"PUB Header processed - Model: {_currentDevice.ModelNumber}, Serial: {_currentDevice.SerialNumber}, Puffs: {_currentDevice.DevicePuffCount}");
-
                 // Send confirmation
                 await SendConfirmHeader();
             }
@@ -1948,10 +1182,8 @@ namespace PUBTransfer
             {
                 // 3,PUFF,1234,5,0200,12/12/2020 12:59:59.100,359.9,359.9,359.9
                 await Task.Delay(500);
-
                 _currentDevice.BatchPuffCount = Convert.ToInt32(strSplit[4].Trim());
                 _currentDevice.PubRawData = new string[_currentDevice.BatchPuffCount + 1];
-
                 // Parse datetime based on model
                 if (_currentDevice.ModelNumber == 1 || _currentDevice.ModelNumber == 4)
                 {
@@ -1971,7 +1203,6 @@ namespace PUBTransfer
                     _currentDevice.PuffDateTime = Convert.ToDateTime(time.ToString("yyyy-MM-dd HH:mm:ss.fff"));
                     _currentDevice.PuffCountLeft--;
                 }
-
                 // Store angles for models that provide them
                 if (_currentDevice.ModelNumber == 1 || _currentDevice.ModelNumber == 4 || _currentDevice.ModelNumber == 5)
                 {
@@ -1979,11 +1210,9 @@ namespace PUBTransfer
                     _currentDevice.Y_Angle = Convert.ToDouble(strSplit[7]);
                     _currentDevice.Z_Angle = Convert.ToDouble(strSplit[8]);
                 }
-
                 _currentDevice.TransferTime = DateTime.UtcNow;
                 _currentDevice.PuffID--;
                 _currentDevice.PuffNum++;
-
                 _logData.AppendLine($"PUFF Header processed - Batch Count: {_currentDevice.BatchPuffCount}");
             }
             catch (Exception ex)
@@ -1998,9 +1227,7 @@ namespace PUBTransfer
             {
                 _currentDevice.PUBDataCounter++;
                 _currentDevice.PuffCountLeft--;
-
                 string insertString = "";
-
                 if (_currentDevice.ModelNumber == 2) // GLO
                 {
                     insertString = await ProcessGLOData(strSplit);
@@ -2017,7 +1244,6 @@ namespace PUBTransfer
                 {
                     insertString = await ProcessModel1Data(strSplit);
                 }
-
                 if (!string.IsNullOrEmpty(insertString))
                 {
                     _currentDevice.PubRawData[_currentDevice.PUBDataCounter] = insertString;
@@ -2029,9 +1255,7 @@ namespace PUBTransfer
                         _currentDevice.Puffs.Add(puffData);
                     }
                 }
-
                 _logData.AppendLine($"Got {_currentDevice.PuffNum} of {_currentDevice.TotalPuffCount}");
-
                 // Check if we need to send batch confirmation or finish
                 if (_currentDevice.PUBDataCounter == _currentDevice.BatchPuffCount)
                 {
@@ -2040,7 +1264,6 @@ namespace PUBTransfer
                         await SendBatchConfirmation();
                     }
                 }
-
                 if (_currentDevice.TotalPuffCount == _currentDevice.PUBDataCounter)
                 {
                     await SendFinalConfirmation();
@@ -2060,10 +1283,8 @@ namespace PUBTransfer
             double current = Math.Floor(double.Parse(strSplit[3]));
             const float HARMONY_PRESSURE_FLOW = 0.175f;
             float harmonyFlow = float.Parse(strSplit[4]) * HARMONY_PRESSURE_FLOW;
-
             double offsetTime = double.Parse(strSplit[1]);
             string dateTimePlusOffset = _currentDevice.PuffDateTime.AddMilliseconds(offsetTime).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.fff");
-
             var puffData = new PuffData
             {
                 PuffId = _currentDevice.PuffID,
@@ -2080,7 +1301,6 @@ namespace PUBTransfer
                 ZAngle = _currentDevice.Z_Angle,
                 VBat = _currentDevice.VBat
             };
-
             return $"{puffData.PuffId},{_currentDevice.SerialNumber},{offsetTime},{dateTimePlusOffset},{volts},{current},{puffData.Pressure},{harmonyFlow},{puffData.Power},{puffData.RTD}";
         }
 
@@ -2088,17 +1308,14 @@ namespace PUBTransfer
         {
             // Handle Model 1/4/6 data format
             // This would be similar to your getRawData1 method
-
             if (strSplit[1].Contains("0/0/2000"))
             {
                 _currentDevice.PuffCountLeft--;
                 _currentDevice.TotalPuffCount--;
                 return "";
             }
-
             DateTime start = DateTime.ParseExact(strSplit[1], "M/d/yyyy H:m:s", CultureInfo.InvariantCulture).ToUniversalTime();
             DateTime end = start.AddSeconds(Double.Parse(strSplit[9])).ToUniversalTime();
-
             var puffData = new PuffData
             {
                 PuffId = int.Parse(strSplit[2]),
@@ -2110,9 +1327,7 @@ namespace PUBTransfer
                 XAngle = double.Parse(strSplit[6]),
                 VBat = _currentDevice.VBat
             };
-
             string insertString = $"{_currentDevice.SerialNumber},{start:yyyy-MM-dd HH:mm:ss},{strSplit[2]},{strSplit[3]},{strSplit[4]},{strSplit[6]},{strSplit[5]},{strSplit[8]},{strSplit[7]},{end:yyyy-MM-dd HH:mm:ss},{strSplit[9]},{_currentDevice.VBat}";
-
             return insertString;
         }
 
@@ -2150,17 +1365,13 @@ namespace PUBTransfer
             {
                 string timeStamp = DateTime.UtcNow.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss");
                 string responseString;
-
                 if (_currentDevice.DevicePuffCount == 0)
                     responseString = $"2,{_currentDevice.SerialNumber},{timeStamp},005";
                 else
                     responseString = $"4,{_currentDevice.SerialNumber},{timeStamp},005";
-
                 await Task.Delay(500);
-
                 byte[] data = Encoding.UTF8.GetBytes(responseString);
                 await _writeCharacteristic.WriteAsync(data);
-
                 _logData.AppendLine($"Sent confirm header: {responseString}");
             }
             catch (Exception ex)
@@ -2175,12 +1386,9 @@ namespace PUBTransfer
             {
                 string timeStamp = DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss");
                 string responseString = $"1,{_currentDevice.SerialNumber},{timeStamp},005,000000000000000000000000000000000000000000";
-
                 byte[] data = Encoding.UTF8.GetBytes(responseString);
                 await _writeCharacteristic.WriteAsync(data);
-
                 _logData.AppendLine($"Sent batch confirmation: {responseString}");
-
                 // Reset for next batch
                 _currentDevice.PUBDataCounter = 0;
             }
@@ -2196,20 +1404,15 @@ namespace PUBTransfer
             {
                 string timeStamp = DateTime.UtcNow.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss");
                 string responseString = $"1,{_currentDevice.SerialNumber},{timeStamp},005,000000000000000000000000000000000000000000";
-
                 byte[] data = Encoding.UTF8.GetBytes(responseString);
                 await _writeCharacteristic.WriteAsync(data);
-
                 _logData.AppendLine($"Sent final confirmation: {responseString}");
-
                 await Task.Delay(1000);
-
                 // Disconnect
                 if (_currentDevice.Device.State == DeviceState.Connected)
                 {
                     await _bluetoothAdapter.DisconnectDeviceAsync(_currentDevice.Device);
                 }
-
                 _logData.AppendLine("Transfer complete - device disconnected");
             }
             catch (Exception ex)
@@ -2228,15 +1431,12 @@ namespace PUBTransfer
                     _currentDevice.EventTotalCount--;
                     return;
                 }
-
                 DateTime date = DateTime.ParseExact(strSplit[2], "MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture);
                 string time = date.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.fff");
                 int eventID = int.Parse(strSplit[3]);
-
                 string insertString = $"{_currentDevice.SerialNumber},{time},{eventID}";
                 _currentDevice.EventCounter++;
                 _currentDevice.Events[_currentDevice.EventCounter] = insertString;
-
                 if (_currentDevice.EventCounter == _currentDevice.EventTotalCount)
                 {
                     await SendFinalConfirmation();
@@ -2262,20 +1462,16 @@ namespace PUBTransfer
             sb.AppendLine($"Battery: {_currentDevice.VBat} V");
             sb.AppendLine($"Total Puffs Collected: {_currentDevice.Puffs.Count}");
             sb.AppendLine();
-
             sb.AppendLine("=== Puff Data ===");
             foreach (var puff in _currentDevice.Puffs.Take(10)) // Show first 10
             {
                 sb.AppendLine(puff.ToString());
             }
-
             if (_currentDevice.Puffs.Count > 10)
                 sb.AppendLine($"... and {_currentDevice.Puffs.Count - 10} more puffs");
-
             sb.AppendLine();
             sb.AppendLine("=== Collection Log ===");
             sb.AppendLine(_logData.ToString());
-
             await Navigation.PushAsync(new ContentPage
             {
                 Title = "Collected Data",
@@ -2291,13 +1487,10 @@ namespace PUBTransfer
             });
         }
 
-        // Keep your existing methods for scanning, permissions, etc.
         private async void OnScanClicked(object sender, EventArgs e)
         {
-            // Your existing scan implementation
             ScanButton.IsEnabled = false;
             ScanButton.Text = "Scanning...";
-
             try
             {
                 var permissionStatus = await RequestBluetoothPermissions();
@@ -2306,15 +1499,12 @@ namespace PUBTransfer
                     await DisplayAlert("Permission Denied", "Bluetooth permissions are required", "OK");
                     return;
                 }
-
                 if (!_bluetoothLE.IsOn)
                 {
                     await DisplayAlert("Bluetooth Off", "Please enable Bluetooth", "OK");
                     return;
                 }
-
                 Devices.Clear();
-
                 _bluetoothAdapter.DeviceDiscovered += (s, a) =>
                 {
                     if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
@@ -2328,7 +1518,6 @@ namespace PUBTransfer
                         }
                     }
                 };
-
                 await _bluetoothAdapter.StartScanningForDevicesAsync();
             }
             catch (Exception ex)
@@ -2344,7 +1533,6 @@ namespace PUBTransfer
 
         private async Task<PermissionStatus> RequestBluetoothPermissions()
         {
-            // Your existing permission logic
             try
             {
 #if ANDROID
@@ -2384,10 +1572,9 @@ namespace PUBTransfer
             await UpdateSurveyAsync();
         }
 
-        // Keep your other existing methods (UpdateSurveyAsync, etc.)
         public async Task UpdateSurveyAsync()
         {
-            // Your existing survey update logic
+            // existing survey update logic
         }
 
         private string GetSurveyDomain()
