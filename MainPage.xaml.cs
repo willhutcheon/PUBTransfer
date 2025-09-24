@@ -717,7 +717,11 @@
 
 
 
+//using Java.IO;
+//using Android.Content.Res;
+//using Android.Opengl;
 using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Controls;
 using Plugin.BLE;
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
@@ -728,6 +732,7 @@ using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+//using static Android.Preferences.PreferenceActivity;
 //using static Android.Preferences.PreferenceActivity;
 
 namespace PUBTransfer
@@ -841,11 +846,12 @@ namespace PUBTransfer
         private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
 
         //reading but also trying to write back here, should this be seperate steps / functions
-        private async Task<string> ReadHeaderAsync(IDevice device)
+        //private async Task<string> ReadHeaderAsync(IDevice device)
+        private async Task<(string Header, ICharacteristic HeaderChar)> ReadHeaderAsync(IDevice device)
         {
             var allData = new StringBuilder();
-            try
-            {
+            //try
+            //{
                 // Step 1: Get services and find the header characteristic
                 var services = await device.GetServicesAsync();
                 ICharacteristic headerChar = null;
@@ -859,10 +865,11 @@ namespace PUBTransfer
                         break;
                     }
                 }
-                if (headerChar == null)
-                {
-                    return "Header characteristic not found.";
-                }
+                //if (headerChar == null)
+                //{
+                //    return "Header characteristic not found.";
+                //}
+
                 // Step 2: If writable, send confirm header first
                 //if (headerChar.CanWrite)
                 //{
@@ -886,7 +893,8 @@ namespace PUBTransfer
                         allData.AppendLine($"[Read] Hex: {BitConverter.ToString(data)}");
 
                         if (IsCompleteHeaderVUSE(textValue))
-                            return textValue;
+                            //return textValue;
+                            return (textValue, headerChar);
                     }
                 }
                 // Step 4: Fallback to notifications
@@ -913,12 +921,13 @@ namespace PUBTransfer
                 //    await headerChar.StopUpdatesAsync();
                 //    return completeHeader;
                 //}
-                return "Header characteristic does not support Read or Update.";
-            }
-            catch (Exception ex)
-            {
-                return $"Error reading header: {ex.Message}";
-            }
+                //return "Header characteristic does not support Read or Update.";
+                return ("Header characteristic does not support Read or Update.", headerChar);
+            //}
+            //catch (Exception ex)
+            //{
+            //    return $"Error reading header: {ex.Message}";
+            //}
         }
 
         //get this working, this is what youre fixing now
@@ -929,7 +938,7 @@ namespace PUBTransfer
             string responseString = $"4,{serialNumber},{timeStamp},005";
             byte[] payload = Encoding.UTF8.GetBytes(responseString);
             await characteristic.WriteAsync(payload);
-            Console.WriteLine($"[Header Ack Sent] {responseString}");
+            //Console.WriteLine($"[Header Ack Sent] {responseString}");
         }
 
         private async Task<List<string>> ReadDataBatchAsync(ICharacteristic characteristic, int expectedCount)
@@ -941,13 +950,13 @@ namespace PUBTransfer
                 if (result == 0 && data != null && data.Length > 0)
                 {
                     string record = Encoding.UTF8.GetString(data);
-                    Console.WriteLine($"[Data Received] {record}");
+                    //Console.WriteLine($"[Data Received] {record}");
                     if (record.StartsWith("DATA"))
                         dataPoints.Add(record);
                 }
                 else
                 {
-                    Console.WriteLine($"[Read Error] iteration {i}, result={result}");
+                    //Console.WriteLine($"[Read Error] iteration {i}, result={result}");
                 }
             }
             return dataPoints;
@@ -959,8 +968,84 @@ namespace PUBTransfer
             string responseString = $"1,{batchSize}";
             byte[] payload = Encoding.UTF8.GetBytes(responseString);
             await characteristic.WriteAsync(payload);
-            Console.WriteLine($"[Batch Confirm Sent] {responseString}");
+            //Console.WriteLine($"[Batch Confirm Sent] {responseString}");
         }
+
+        private async Task AcknowledgeHeaderAsync(ICharacteristic characteristic, string serialNumber)
+        {
+            string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+            string responseString = $"4,{serialNumber},{timeStamp},005";
+            byte[] payload = Encoding.UTF8.GetBytes(responseString);
+            await characteristic.WriteAsync(payload);
+            Console.WriteLine($"[Header Ack Sent] {responseString}");
+            await DisplayAlert("Sending Header Response Data", responseString, "OK");
+        }
+
+        private async Task<List<string>> ReadDataBatchAsync(ICharacteristic characteristic, int batchSize, int puffCount)
+        {
+            var dataPoints = new List<string>();
+            if (puffCount <= 0 || batchSize <= 0)
+            {
+                Console.WriteLine("No data to read (puffCount=0 or batchSize=0).");
+                return dataPoints;
+            }
+            for (int i = 0; i < batchSize; i++)
+            {
+                //what is result code??
+                //It comes from the underlying Bluetooth GATT read operation. 0 usually means success. Any non - zero means an error(e.g.device disconnected, permission denied, read not allowed, etc.)
+                var (data, resultCode) = await characteristic.ReadAsync();
+                //if (resultCode == 0 && data != null && data.Length > 0)
+                if (data != null && data.Length > 0)
+                {
+                    string textValue = Encoding.UTF8.GetString(data);
+                    Console.WriteLine($"[textValue {textValue}");
+                    //if (textValue.StartsWith("DATA"))
+                    //{
+                    dataPoints.Add(textValue);
+                        Console.WriteLine($"[Dataa {textValue}");
+                    //}
+                    //else
+                    //{
+                        //Console.WriteLine($"[Unexpected Response] {textValue}");
+                        //break; // stop if device sends something unexpected
+                    //}
+                }
+                else
+                {
+                    Console.WriteLine($"[Error] Failed to read data point {i + 1}.");
+                    break;
+                }
+            }
+            return dataPoints;
+        }
+
+        // Step 1: Find characteristics (during connection)
+        private async Task<(ICharacteristic headerChar, ICharacteristic dataChar)> GetCharacteristicsAsync(IDevice device)
+        {
+            ICharacteristic headerChar = null;
+            ICharacteristic dataChar = null;
+
+            var services = await device.GetServicesAsync();
+            foreach (var service in services)
+            {
+                var characteristics = await service.GetCharacteristicsAsync();
+                foreach (var c in characteristics)
+                {
+                    // Example UUIDs — replace with actual VUSE UUIDs if you know them
+                    if (c.Id.ToString().Equals("fd5abba0-3935-11e5-85a6-0002a5d5c51b", StringComparison.OrdinalIgnoreCase))
+                        headerChar = c;
+
+                    else if (c.CanRead && !c.CanWrite) // heuristic: data is often read-only
+                        dataChar = c;
+                }
+            }
+
+            if (headerChar == null || dataChar == null)
+                throw new Exception("Could not find both header and data characteristics.");
+
+            return (headerChar, dataChar);
+        }
+
 
         private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
         {
@@ -969,7 +1054,7 @@ namespace PUBTransfer
                 _isCollectingData = true;
                 try
                 {
-                    await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
+                    //await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
                     // 1. Connect to the device
                     await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
                     // Store current device details
@@ -981,15 +1066,80 @@ namespace PUBTransfer
                         TransferTime = DateTime.UtcNow
                     };
                     Globals.CurrentDevice = _currentDevice;
-                    await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
+
+
+
+
+
+                    //await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}", "OK");
                     // === Step 1: Read the full header ===
-                    //all this function does is gett tht header data, noting is said back to the pub here
-                    var header = await ReadHeaderAsync(selectedDevice);
+                    //all this function does is get the header data, nothing is said back to the pub here
+                    //var header = await ReadHeaderAsync(selectedDevice);
+                    //await DisplayAlert("Header Data", header, "OK");
+                    //if (!IsCompleteHeaderVUSE(header))
+                    //{
+                    //    throw new Exception("Incomplete header received.");
+                    //}
+                    //now that we have the header we need to send the header acknowledgement
+                    //await AcknowledgeHeaderAsync(writeChar, serial);
+
+                    //STEP 1: PHONE READS FROM CHARACTERISTIC
+                    var (header, headerChar) = await ReadHeaderAsync(selectedDevice);
                     await DisplayAlert("Header Data", header, "OK");
                     if (!IsCompleteHeaderVUSE(header))
-                    {
                         throw new Exception("Incomplete header received.");
+                    //STEP 2: PHONE WRITES TO CHARACTERISTIC
+                    var parts = header.Split(',');
+                    string serial = parts.Length > 1 ? parts[1] : "";
+                    await AcknowledgeHeaderAsync(headerChar, serial);
+                    //STEP 3: PHONE READS CHARACTERISTIC (IF DATA AVAILABLE, REPEAT FOR NUMBER OF DATA POINTS)
+                    int batchSize = int.Parse(parts[3]);   // Batch_Size
+                    int puffCount = int.Parse(parts[4]);   // Puff_Count
+                    var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount);
+                    if (dataPoints.Count > 0)
+                    {
+                        string preview = string.Join("\n", dataPoints.Take(5));
+                        await DisplayAlert("First Data Points", preview, "OK");
                     }
+                    else
+                    {
+                        await DisplayAlert("Info", "No data points returned.", "OK");
+                    }
+
+
+
+
+                    // inside OnDeviceSelected
+                    //var (headerChar, dataChar) = await GetCharacteristicsAsync(selectedDevice);
+                    //// STEP 1: Read header
+                    //var (header, _) = await ReadHeaderAsync(selectedDevice);
+                    //if (!IsCompleteHeaderVUSE(header))
+                    //    throw new Exception("Incomplete header received.");
+
+                    //// STEP 2: Ack header
+                    //var parts = header.Split(',');
+                    //string serial = parts.Length > 1 ? parts[1] : "";
+                    //await AcknowledgeHeaderAsync(headerChar, serial);
+
+                    //// STEP 3: Read data (from *dataChar*, not headerChar)
+                    //int batchSize = int.Parse(parts[3]);   // from header
+                    //int puffCount = int.Parse(parts[4]);   // from header
+                    //var dataPoints = await ReadDataBatchAsync(dataChar, batchSize, puffCount);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     //var parts = header.Split(',');
                     //string serial = parts[1];
                     //int batchSize = int.Parse(parts[3]);   // Batch_Size
@@ -999,12 +1149,12 @@ namespace PUBTransfer
                     //var services = await selectedDevice.GetServicesAsync();
                     //foreach (var service in services)
                     //{
-                        //var characteristics = await service.GetCharacteristicsAsync();
-                        //writeChar = characteristics.FirstOrDefault(c => c.CanWrite);
-                        //if (writeChar != null) break;
+                    //var characteristics = await service.GetCharacteristicsAsync();
+                    //writeChar = characteristics.FirstOrDefault(c => c.CanWrite);
+                    //if (writeChar != null) break;
                     //}
                     //if (writeChar == null)
-                        //throw new Exception("No writable characteristic found for ACK and data transfer.");
+                    //throw new Exception("No writable characteristic found for ACK and data transfer.");
                     // === Step 3: Acknowledge the header ===
                     //await AckHeaderAsync(writeChar, serial);
                     // === Step 4: Read the data batch ===
@@ -1045,11 +1195,11 @@ namespace PUBTransfer
 
                 byte[] data = Encoding.UTF8.GetBytes(responseString);
                 await characteristic.WriteAsync(data);
-                Console.WriteLine($"[Handshake Sent] {responseString}");
+                //Console.WriteLine($"[Handshake Sent] {responseString}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Handshake Error] {ex}");
+                //Console.WriteLine($"[Handshake Error] {ex}");
             }
         }
 
