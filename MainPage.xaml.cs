@@ -122,7 +122,7 @@ namespace PUBTransfer
             byte[] payload = Encoding.UTF8.GetBytes(responseString);
             await characteristic.WriteAsync(payload);
             Console.WriteLine($"[Header Ack Sent] {responseString}");
-            await DisplayAlert("Sending Header Response Data", responseString, "OK");
+            //await DisplayAlert("Sending Header Response Data", responseString, "OK");
         }
 
         //private async Task<List<string>> ReadDataBatchAsync(ICharacteristic headerChar, int batchSize, int puffCount, string serialNumber)
@@ -239,7 +239,7 @@ namespace PUBTransfer
                     var (headerBytes, resultCode) = await headerChar.ReadAsync();
                     var header = Encoding.UTF8.GetString(headerBytes);
                     Console.WriteLine($"[BLE] Header: {header}");
-                    await DisplayAlert("Header Data", header, "OK");
+                    //await DisplayAlert("Header Data", header, "OK");
                     // STEP 2: Ack header
                     var parts = header.Split(',');
                     string serial = parts.Length > 1 ? parts[1] : "";
@@ -251,12 +251,38 @@ namespace PUBTransfer
                     Console.WriteLine($"puffCount {puffCount}");
                     //var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial);
                     var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
+
+                    //STEP 5: Send the data to event hub
+
+
                     //STEP 4: Batch Acknowledgement
+                    if (dataPoints.Count > 0)
+                    {
+                        await ConfirmUploadAsync(headerChar, puffCount);
+                    }
                 }
                 catch (Exception ex)
                 {
                     await DisplayAlert("Error", $"Failed to connect or read data: {ex.Message}", "OK");
                 }
+            }
+        }
+
+        private async Task ConfirmUploadAsync(ICharacteristic characteristic, int puffCount)
+        {
+            try
+            {
+                // Example format: "1,100" → ACK command + number of records to delete
+                string confirmString = $"1,{puffCount}";
+                byte[] payload = Encoding.UTF8.GetBytes(confirmString);
+                await characteristic.WriteAsync(payload);
+                Console.WriteLine($"[Upload Confirm Sent] {confirmString}");
+                await Application.Current.MainPage.DisplayAlert("Upload Confirmed", $"Sent: {confirmString}", "OK");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BLE] Error confirming upload: {ex.Message}");
+                await Application.Current.MainPage.DisplayAlert("Error", $"Upload confirmation failed: {ex.Message}", "OK");
             }
         }
 
