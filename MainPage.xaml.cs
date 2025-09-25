@@ -16,26 +16,32 @@ namespace PUBTransfer
     public class PuffData
     {
         public int PuffId { get; set; }
+        public string dataString { get; set; }
         public DateTime Start { get; set; }
-        public DateTime End { get; set; }
+        public double indexPlaceholderIndex2 { get; set; }
+        public double indexPlaceholderIndex3 { get; set; }
+        public double indexPlaceholderIndex4 { get; set; }
+        public double VAve { get; set; }
+        public double VHigh { get; set; }
+        public double Current7 { get; set; }
+        public double Current8 { get; set; }
         public double Duration { get; set; }
-        public double Volume { get; set; }
-        public double Battery { get; set; }
-        public double XAngle { get; set; }
-        public double VBat { get; set; }
-        public double YAngle { get; set; }
-        public double ZAngle { get; set; }
-        public double Pressure { get; set; }
-        public double Flow { get; set; }
-        public double Current { get; set; }
-        public double Power { get; set; }
-        public int RTD { get; set; }
+        public DateTime End { get; set; }
         public override string ToString()
         {
-            return $"Puff {PuffId} | Start={Start:HH:mm:ss} | Duration={Duration:F2}s | Battery={Battery:F2}V | Pressure={Pressure:F2}";
+            return $"Puff {PuffId} | DATA={dataString} | " +
+                   $"Start={Start:MM/dd/yyyy HH:mm:ss} | " +
+                   $"Index2={indexPlaceholderIndex2:F2} | " +
+                   $"Index3={indexPlaceholderIndex3:F2} | " +
+                   $"Index4={indexPlaceholderIndex4:F2} | " +
+                   $"VAve={VAve:F4} | " +
+                   $"VHigh={VHigh:F4} | " +
+                   $"Current7={Current7:F4} | " +
+                   $"Current8={Current8:F4} | " +
+                   $"Duration={Duration:F4} | " +
+                   $"End={End:MM/dd/yyyy HH:mm:ss}";
         }
     }
-
     public static class Globals
     {
         public static string ScreenMode;
@@ -57,7 +63,6 @@ namespace PUBTransfer
         PROD,
         Nothing
     }
-
     public class BLEDeviceDetails
     {
         public IDevice Device { get; set; }
@@ -91,7 +96,6 @@ namespace PUBTransfer
         // Raw data storage like Xamarin version
         public string[] PubRawData { get; set; }
     }
-
     public partial class MainPage : ContentPage
     {
         private EnvironmentType currentEnvironment = EnvironmentType.DEV;
@@ -101,9 +105,7 @@ namespace PUBTransfer
         private ICharacteristic _writeCharacteristic;
         private bool _isCollectingData = false;
         private StringBuilder _logData = new StringBuilder();
-
         public ObservableCollection<IDevice> Devices { get; set; } = new();
-
         public MainPage()
         {
             InitializeComponent();
@@ -112,9 +114,7 @@ namespace PUBTransfer
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
         }
-
         private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
-
         private async Task AcknowledgeHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -160,7 +160,6 @@ namespace PUBTransfer
                 {
                     var (dataBytes, resultCode) = await headerChar.ReadAsync();
                     var dataLine = Encoding.UTF8.GetString(dataBytes);
-
                     if (string.IsNullOrWhiteSpace(dataLine) || !dataLine.StartsWith("DATA"))
                     {
                         Console.WriteLine($"[BLE] Invalid or empty puff data at index {i}: {dataLine}");
@@ -187,7 +186,6 @@ namespace PUBTransfer
             }
             return dataPoints;
         }
-
         private async Task<ICharacteristic?> GetHeaderCharacteristicAsync(IDevice device)
         {
             try
@@ -214,7 +212,41 @@ namespace PUBTransfer
                 return null;
             }
         }
-
+        private void ParsePuffData(List<string> dataPoints)
+        {
+            if (_currentDevice == null) return;
+            int puffCounter = 1;
+            foreach (var line in dataPoints)
+            {
+                try
+                {
+                    var parts = line.Split(',');
+                    if (parts.Length < 11) continue; // sanity check
+                    var puff = new PuffData
+                    {
+                        PuffId = puffCounter++,
+                        dataString = parts[0],
+                        Start = DateTime.Parse(parts[1]),
+                        indexPlaceholderIndex2 = double.TryParse(parts[2], out var indph2) ? indph2 : 0,
+                        indexPlaceholderIndex3 = double.TryParse(parts[3], out var indph3) ? indph3 : 0,
+                        indexPlaceholderIndex4 = double.TryParse(parts[4], out var indph4) ? indph4 : 0,
+                        VAve = double.TryParse(parts[5], out var VAve) ? VAve : 0,
+                        VHigh = double.TryParse(parts[6], out var VHigh) ? VHigh : 0,
+                        Current7 = double.TryParse(parts[7], out var Current7) ? Current7 : 0,
+                        Current8 = double.TryParse(parts[8], out var Current8) ? Current8 : 0,
+                        Duration = double.TryParse(parts[9], out var Duration) ? Duration : 0,
+                        End = DateTime.Parse(parts[10]),
+                    };
+                    Console.WriteLine($"[ParsePuffData] Total puffs parsed: {puff}");
+                    _currentDevice.Puffs.Add(puff);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ParsePuffData] Error parsing line: {line} | {ex.Message}");
+                }
+            }
+            Console.WriteLine($"[ParsePuffData] Total puffs parsed: {_currentDevice.Puffs.Count}");
+        }
         private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
         {
             if (e.Item is IDevice selectedDevice && !_isCollectingData)
@@ -235,6 +267,14 @@ namespace PUBTransfer
                     };
                     Globals.CurrentDevice = _currentDevice;
                     var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
+
+                    //xamarin flow was
+                    //1. Read header
+                    //2. Ack header
+                    //3. Read puff data → parse into PuffData objects
+                    //4. Confirm upload
+                    //5. Push parsed data to database via REST API
+
                     // STEP 1: Read header
                     var (headerBytes, resultCode) = await headerChar.ReadAsync();
                     var header = Encoding.UTF8.GetString(headerBytes);
@@ -252,14 +292,24 @@ namespace PUBTransfer
                     //var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial);
                     var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
 
-                    //STEP 5: Send the data to event hub
+                    //STEP 3: Put data into puffdata objects
+                    ParsePuffData(dataPoints);
+
+
+
+
+
+
+
+
 
 
                     //STEP 4: Batch Acknowledgement
-                    if (dataPoints.Count > 0)
-                    {
-                        await ConfirmUploadAsync(headerChar, puffCount);
-                    }
+                    //if (dataPoints.Count > 0)
+                    //{
+                    //    await ConfirmUploadAsync(headerChar, puffCount);
+                    //}
+                    //STEP 5: Send data to db
                 }
                 catch (Exception ex)
                 {
@@ -267,7 +317,6 @@ namespace PUBTransfer
                 }
             }
         }
-
         private async Task ConfirmUploadAsync(ICharacteristic characteristic, int puffCount)
         {
             try
@@ -285,7 +334,6 @@ namespace PUBTransfer
                 await Application.Current.MainPage.DisplayAlert("Error", $"Upload confirmation failed: {ex.Message}", "OK");
             }
         }
-
         private async void OnScanClicked(object sender, EventArgs e)
         {
             ScanButton.IsEnabled = false;
@@ -329,7 +377,6 @@ namespace PUBTransfer
                 ScanButton.Text = "Scan";
             }
         }
-
         private async Task<PermissionStatus> RequestBluetoothPermissions()
         {
             try
@@ -359,23 +406,19 @@ namespace PUBTransfer
                 return PermissionStatus.Denied;
             }
         }
-
         private void OnClearClicked(object sender, EventArgs e)
         {
             Devices.Clear();
         }
-
         protected override async void OnAppearing()
         {
             base.OnAppearing();
             await UpdateSurveyAsync();
         }
-
         public async Task UpdateSurveyAsync()
         {
             // existing survey update logic
         }
-
         private string GetSurveyDomain()
         {
             return currentEnvironment switch
@@ -386,7 +429,6 @@ namespace PUBTransfer
                 _ => ""
             };
         }
-
         private int GetEnvironmentCode()
         {
             return currentEnvironment switch
@@ -397,12 +439,10 @@ namespace PUBTransfer
                 _ => -1
             };
         }
-
         private void DisplayQRCode()
         {
             string deviceId = Guid.NewGuid().ToString();
         }
-
         private void OnEnvironmentChanged(object sender, CheckedChangedEventArgs e)
         {
             var radio = sender as RadioButton;
