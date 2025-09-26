@@ -6,10 +6,14 @@ using Plugin.BLE.Abstractions.Contracts;
 using Plugin.BLE.Abstractions.EventArgs;
 using QRCoder;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using Amazon.Kinesis;
+using Amazon.Kinesis.Model;
+
 
 namespace PUBTransfer
 {
@@ -44,17 +48,10 @@ namespace PUBTransfer
     }
     public static class Globals
     {
-        public static string ScreenMode;
-        public static string TopPanel;
-        public static string BottomPanel;
-        public static bool Scanning;
-        public static string serialNumber;
-        public static string PassCode;
-        public static Timer YourTimer;
-        public static string surveySerialNumber;
-        public static DateTime surveySerialDate;
-        public static bool wifiConnected = true;
         public static BLEDeviceDetails CurrentDevice;
+        //should this be private, should it even be in globals
+        public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+        public static readonly string streamName = "End_Pub_KinesisStreams";
     }
     public enum EnvironmentType
     {
@@ -66,36 +63,104 @@ namespace PUBTransfer
     public class BLEDeviceDetails
     {
         public IDevice Device { get; set; }
-        public IService PrimaryService { get; set; }
-        public ICharacteristic PrimaryCharacteristic { get; set; }
-        public IDescriptor PrimaryDescriptor { get; set; }
         public string SerialNumber { get; set; }
-        public int ModelNumber { get; set; }
-        public string FirmwareVersion { get; set; }
         public string Status { get; set; }
-        public int PuffCountLeft { get; set; }
-        public int DevicePuffCount { get; set; }
-        public int TotalPuffCount { get; set; }
-        public int BatchPuffCount { get; set; }
-        public int BatchPuffCounter { get; set; }
-        public int PuffID { get; set; }
-        public int PuffNum { get; set; }
-        public int PUBDataCounter { get; set; }
-        public double VBat { get; set; }
-        public DateTime PuffDateTime { get; set; }
         public DateTime TransferTime { get; set; }
-        // For different model support
-        public double X_Angle { get; set; }
-        public double Y_Angle { get; set; }
-        public double Z_Angle { get; set; }
         public List<PuffData> Puffs { get; set; } = new List<PuffData>();
-        public string[] Events { get; set; } = new string[500];
-        public int EventTotalCount { get; set; }
-        public int EventBatchSize { get; set; }
-        public int EventCounter { get; set; }
-        // Raw data storage like Xamarin version
-        public string[] PubRawData { get; set; }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public enum datatable
+    {
+        RawData1,
+        RawData2,
+        Events,
+        Nothing
+    }
+
+    public enum environment
+    {
+        DEV,
+        QA,
+        PROD,
+        Nothing
+    }
+    public abstract class TransferManager
+    {
+        public string type;
+        public datatable currentTable;
+        public string currentEventHubNamespace;
+        public string currentPolicyName;
+        public string currentPolicyKey;
+        public string currentEventHub;
+        public string currentStreamName;
+        public string currentAccessKey;
+        public string currentSecretKey;
+        public string currentEnvironment;
+        public string EventHubNamespace = "EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net";
+        public string PolicyName = "pubstream-policy-central";
+        public string EventHubRD1 = "pubstream-rd1-central";
+        public string PolicyKeyRD1 = "D5FY6WNY3o4akIha1gQ7qelwicMX8L6nFT1BKpjWxe4=";
+        public string EventHubRD2 = "pubstream-rd2-central";
+        public string PolicyKeyRD2 = "ZqKYOaPH9V6xSh5zIbdMEtMuBr2WqG0ySni2l1omPoo=";
+        public string EventHubEvents = "pubstream-events-central";
+        public string PolicyKeyEvents = "AU6hfNsXwmBy3WHiFUlMQIvuSogYSlZ8ivUwc3luY1Y=";
+        public string status;
+        public string streamStatus;
+        internal EventHandler newStatus;
+        internal EventHandler updateCurrentStatus;
+        public abstract void configureManager(environment DBName, datatable table);
+        public abstract Task<bool> openStream();
+        public abstract Task<bool> runExampleV1(string DB);
+        public abstract Task<bool> runMultiExampleV1(string DB);
+        public abstract Task<bool> runExampleV2(string DB);
+        public abstract Task<bool> runMultiExampleV2(string DB);
+        public abstract Task<bool> runExampleEvents();
+        public abstract Task<bool> runMultiExampleEvents();
+        public abstract Task<bool> writeRecord(string rawData, string typeOfData, string DB);
+        public abstract Task<bool> writeMultiRecords(string[] rawData, string typeOfData);
+        public abstract void destroyManager();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public partial class MainPage : ContentPage
     {
         private EnvironmentType currentEnvironment = EnvironmentType.DEV;
@@ -106,15 +171,39 @@ namespace PUBTransfer
         private bool _isCollectingData = false;
         private StringBuilder _logData = new StringBuilder();
         public ObservableCollection<IDevice> Devices { get; set; } = new();
+
+
+
+        private AmazonKinesisClient awsKinesisClient;
+        private CancellationTokenSource kinesisCancellationTokenSource;
+
+
         public MainPage()
         {
             InitializeComponent();
+
+            InitKinesisClient();
+
             DisplayQRCode();
             _bluetoothLE = CrossBluetoothLE.Current;
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
         }
-        private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+
+        private void InitKinesisClient()
+        {
+            //find out what these are
+            var accessKey = "MY_ACCESS_KEY";
+            var secretKey = "MY_SECRET_KEY";
+            awsKinesisClient = new AmazonKinesisClient(
+                accessKey,
+                secretKey,
+                Amazon.RegionEndpoint.USEast1 // Change to our region
+            );
+        }
+
+
+        //private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
         private async Task AcknowledgeHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -124,32 +213,6 @@ namespace PUBTransfer
             Console.WriteLine($"[Header Ack Sent] {responseString}");
             //await DisplayAlert("Sending Header Response Data", responseString, "OK");
         }
-
-        //private async Task<List<string>> ReadDataBatchAsync(ICharacteristic headerChar, int batchSize, int puffCount, string serialNumber)
-        //{
-        //    var dataPoints = new List<string>();
-        //    try
-        //    {
-        //        // Read puff data repeatedly from same characteristic
-        //        for (int i = 0; i < puffCount; i++)
-        //        {
-        //            var (dataBytes, resultCode) = await headerChar.ReadAsync();
-        //            var dataLine = Encoding.UTF8.GetString(dataBytes);
-        //            if (string.IsNullOrWhiteSpace(dataLine) || !dataLine.StartsWith("DATA"))
-        //            {
-        //                Console.WriteLine($"[BLE] Invalid or empty puff data at index {i}: {dataLine}");
-        //                continue;
-        //            }
-        //            Console.WriteLine($"[BLE] Puff {i + 1}/{puffCount}: {dataLine}");
-        //            dataPoints.Add(dataLine);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"[BLE] Error in ReadDataBatchAsync: {ex.Message}");
-        //    }
-        //    return dataPoints;
-        //}
         private async Task<List<string>> ReadDataBatchAsync(ICharacteristic headerChar, int batchSize, int puffCount, string serialNumber, Page page)
         {
             var dataPoints = new List<string>();
@@ -196,7 +259,8 @@ namespace PUBTransfer
                     var characteristics = await service.GetCharacteristicsAsync();
                     foreach (var c in characteristics)
                     {
-                        if (c.Id == HeaderCharacteristicId)
+                        //if (c.Id == HeaderCharacteristicId)
+                        if (c.Id == Globals.HeaderCharacteristicId)
                         {
                             Console.WriteLine($"[BLE] Found Header Characteristic: {c.Id}");
                             return c;
@@ -221,7 +285,7 @@ namespace PUBTransfer
                 try
                 {
                     var parts = line.Split(',');
-                    if (parts.Length < 11) continue; // sanity check
+                    if (parts.Length < 11) continue; // sanity check for VUSE
                     var puff = new PuffData
                     {
                         PuffId = puffCounter++,
@@ -269,10 +333,10 @@ namespace PUBTransfer
                     var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
 
                     //xamarin flow was
-                    //1. Read header
-                    //2. Ack header
-                    //3. Read puff data → parse into PuffData objects
-                    //4. Confirm upload
+                    //1. Read header (done)
+                    //2. Ack header (done)
+                    //3. Read puff data → parse into PuffData objects (done)
+                    //4. Confirm upload (done)
                     //5. Push parsed data to database via REST API
 
                     // STEP 1: Read header
@@ -291,25 +355,34 @@ namespace PUBTransfer
                     Console.WriteLine($"puffCount {puffCount}");
                     //var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial);
                     var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
-
                     //STEP 3: Put data into puffdata objects
                     ParsePuffData(dataPoints);
-
-
-
-
-
-
-
-
-
-
-                    //STEP 4: Batch Acknowledgement
+                    //STEP 4: Confirm upload
                     //if (dataPoints.Count > 0)
                     //{
                     //    await ConfirmUploadAsync(headerChar, puffCount);
                     //}
-                    //STEP 5: Send data to db
+                    //STEP 5: Send data to db, find out how to send the PuffData up to the db/event hub
+                    // STEP 5: Push parsed data to backend
+                    //i think this needs to be packaged as some json form to get sent to the event hub
+
+                    //if (_currentDevice?.Puffs?.Count > 0)
+                    //{
+                    //    await PuffUploader.UploadPuffsAsync(_currentDevice.Puffs, currentEnvironment);
+                    //}
+                    if (_currentDevice?.Puffs?.Count > 0)
+                    {
+                        string[] rawData = ConvertPuffsToRawData(_currentDevice.Puffs);
+                        //make writeMultiRecords
+                        //await writeMultiRecords(rawData, "rawdata1");
+                    }
+
+
+
+
+
+
+
                 }
                 catch (Exception ex)
                 {
@@ -317,6 +390,84 @@ namespace PUBTransfer
                 }
             }
         }
+
+
+
+
+        //this is fine because even if writeMultiRecords only suypports PUBs its likely that the VUSE data will need to be in this structure as well
+        public string[] ConvertPuffsToRawData(List<PuffData> puffs)
+        {
+            var rawData = new List<string>();
+            foreach (var puff in puffs)
+            {
+                string line = $"{puff.PuffId}, {puff.Start:yyyy-MM-dd HH:mm:ss}, " +
+                              $"{puff.indexPlaceholderIndex2}, {puff.indexPlaceholderIndex3}, {puff.indexPlaceholderIndex4}, " +
+                              $"{puff.VAve}, {puff.VHigh}, {puff.Current7}, {puff.Current8}, " +
+                              $"{puff.Duration}, {puff.End:yyyy-MM-dd HH:mm:ss}";
+                rawData.Add(line);
+            }
+            return rawData.ToArray();
+        }
+        public async Task<bool> writeRecord(string rawData)
+        {
+            if (string.IsNullOrEmpty(rawData))
+                return true;
+            byte[] byteRawData = Encoding.ASCII.GetBytes(rawData);
+            PutRecordRequest request = new PutRecordRequest
+            {
+                Data = new System.IO.MemoryStream(),
+                StreamName = Globals.streamName,
+                PartitionKey = "1"
+            };
+            await request.Data.WriteAsync(byteRawData, 0, byteRawData.Length);
+            PutRecordResponse response = await awsKinesisClient.PutRecordAsync(
+                request,
+                kinesisCancellationTokenSource.Token
+            );
+            return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
+        }
+        public bool writeMultiRecords(string[] rawData, string typeOfData)
+        {
+            try
+            {
+                List<PutRecordsRequestEntry> entry = new List<PutRecordsRequestEntry>();
+                for (int i = 0; i < rawData.Length; i++)
+                {
+                    if (string.IsNullOrEmpty(rawData[i]))
+                        continue;
+                    byte[] byteRawData = Encoding.ASCII.GetBytes(rawData[i]);
+                    entry.Add(new PutRecordsRequestEntry
+                    {
+                        Data = new System.IO.MemoryStream(),
+                        PartitionKey = "1"
+                    });
+                    entry[^1].Data.WriteAsync(byteRawData, 0, byteRawData.Length).Wait();
+                }
+                PutRecordsRequest multirequest = new PutRecordsRequest
+                {
+                    Records = entry,
+                    StreamName = Globals.streamName
+                };
+                awsKinesisClient.PutRecordsAsync(multirequest, kinesisCancellationTokenSource.Token).Wait();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
         private async Task ConfirmUploadAsync(ICharacteristic characteristic, int puffCount)
         {
             try
