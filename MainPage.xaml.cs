@@ -51,7 +51,6 @@ namespace PUBTransfer
         public static BLEDeviceDetails CurrentDevice;
         //should this be private, should it even be in globals
         public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
-        public static readonly string streamName = "End_Pub_KinesisStreams";
     }
     public enum EnvironmentType
     {
@@ -68,24 +67,6 @@ namespace PUBTransfer
         public DateTime TransferTime { get; set; }
         public List<PuffData> Puffs { get; set; } = new List<PuffData>();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public enum datatable
     {
         RawData1,
@@ -93,7 +74,6 @@ namespace PUBTransfer
         Events,
         Nothing
     }
-
     public enum environment
     {
         DEV,
@@ -137,30 +117,6 @@ namespace PUBTransfer
         public abstract Task<bool> writeMultiRecords(string[] rawData, string typeOfData);
         public abstract void destroyManager();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public partial class MainPage : ContentPage
     {
         private EnvironmentType currentEnvironment = EnvironmentType.DEV;
@@ -171,39 +127,14 @@ namespace PUBTransfer
         private bool _isCollectingData = false;
         private StringBuilder _logData = new StringBuilder();
         public ObservableCollection<IDevice> Devices { get; set; } = new();
-
-
-
-        private AmazonKinesisClient awsKinesisClient;
-        private CancellationTokenSource kinesisCancellationTokenSource;
-
-
         public MainPage()
         {
             InitializeComponent();
-
-            InitKinesisClient();
-
             DisplayQRCode();
             _bluetoothLE = CrossBluetoothLE.Current;
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
         }
-
-        private void InitKinesisClient()
-        {
-            //find out what these are
-            var accessKey = "MY_ACCESS_KEY";
-            var secretKey = "MY_SECRET_KEY";
-            awsKinesisClient = new AmazonKinesisClient(
-                accessKey,
-                secretKey,
-                Amazon.RegionEndpoint.USEast1 // Change to our region
-            );
-        }
-
-
-        //private static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
         private async Task AcknowledgeHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -375,6 +306,8 @@ namespace PUBTransfer
                         string[] rawData = ConvertPuffsToRawData(_currentDevice.Puffs);
                         //make writeMultiRecords
                         //await writeMultiRecords(rawData, "rawdata1");
+                        //await writeRecord(rawData);
+                        //await writeMultiRecordsAsync(rawData);
                     }
 
 
@@ -407,67 +340,7 @@ namespace PUBTransfer
                 rawData.Add(line);
             }
             return rawData.ToArray();
-        }
-        public async Task<bool> writeRecord(string rawData)
-        {
-            if (string.IsNullOrEmpty(rawData))
-                return true;
-            byte[] byteRawData = Encoding.ASCII.GetBytes(rawData);
-            PutRecordRequest request = new PutRecordRequest
-            {
-                Data = new System.IO.MemoryStream(),
-                StreamName = Globals.streamName,
-                PartitionKey = "1"
-            };
-            await request.Data.WriteAsync(byteRawData, 0, byteRawData.Length);
-            PutRecordResponse response = await awsKinesisClient.PutRecordAsync(
-                request,
-                kinesisCancellationTokenSource.Token
-            );
-            return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
-        }
-        public bool writeMultiRecords(string[] rawData, string typeOfData)
-        {
-            try
-            {
-                List<PutRecordsRequestEntry> entry = new List<PutRecordsRequestEntry>();
-                for (int i = 0; i < rawData.Length; i++)
-                {
-                    if (string.IsNullOrEmpty(rawData[i]))
-                        continue;
-                    byte[] byteRawData = Encoding.ASCII.GetBytes(rawData[i]);
-                    entry.Add(new PutRecordsRequestEntry
-                    {
-                        Data = new System.IO.MemoryStream(),
-                        PartitionKey = "1"
-                    });
-                    entry[^1].Data.WriteAsync(byteRawData, 0, byteRawData.Length).Wait();
-                }
-                PutRecordsRequest multirequest = new PutRecordsRequest
-                {
-                    Records = entry,
-                    StreamName = Globals.streamName
-                };
-                awsKinesisClient.PutRecordsAsync(multirequest, kinesisCancellationTokenSource.Token).Wait();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-
-
-
-
-
-
-
-
-
-
-
+        }        
         private async Task ConfirmUploadAsync(ICharacteristic characteristic, int puffCount)
         {
             try
