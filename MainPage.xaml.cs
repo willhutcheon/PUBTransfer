@@ -17,6 +17,7 @@ using System.Text.Json;
 
 namespace PUBTransfer
 {
+    //todo: make sure this works / get this working for iphones. i believe i need to understand how the connection works and how connections are remembered on iphone
     public static class EventHubUploader
     {
         //prod
@@ -183,7 +184,7 @@ namespace PUBTransfer
                 _isCollectingData = true;
                 try
                 {
-                    //await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
+                    await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
                     // 1. Connect to the device
                     await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
                     // Store current device details
@@ -204,6 +205,8 @@ namespace PUBTransfer
                     //4. Confirm upload (done)
                     //5. Push parsed data to database via REST API
 
+
+                    await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}...", "OK");
                     // STEP 1: Read header
                     var (headerBytes, resultCode) = await headerChar.ReadAsync();
                     var header = Encoding.UTF8.GetString(headerBytes);
@@ -223,10 +226,10 @@ namespace PUBTransfer
                     //STEP 3: Put data into puffdata objects
                     ParsePuffData(dataPoints);
                     //STEP 4: Confirm upload
-                    if (dataPoints.Count > 0)
-                    {
-                        await ConfirmUploadAsync(headerChar, puffCount);
-                    }
+                    //if (dataPoints.Count > 0)
+                    //{
+                    //    await ConfirmUploadAsync(headerChar, puffCount);
+                    //}
                     //STEP 5: Push parsed data to backend
                     if (_currentDevice?.Puffs?.Count > 0)
                     {
