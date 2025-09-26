@@ -11,12 +11,119 @@ using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
-using Amazon.Kinesis;
-using Amazon.Kinesis.Model;
 
 
+
+
+using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Producer;
+using System.Text.Json;
 namespace PUBTransfer
 {
+    //public static class EventHubUploader
+    //{
+    //    //private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=<policy-key>";
+    //    private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=D5FY6WNY3o4akIha1gQ7qelwicMX8L6nFT1BKpjWxe4=";
+    //    private static string eventHubName = "pubstream-rd1-central";
+
+    //    public static async Task<bool> SendPuffsAsync(List<PuffData> puffs)
+    //    {
+    //        await using var producerClient = new EventHubProducerClient(connectionString, eventHubName);
+
+    //        try
+    //        {
+    //            using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
+
+    //            foreach (var puff in puffs)
+    //            {
+    //                var json = JsonSerializer.Serialize(puff);
+    //                var eventData = new EventData(json);
+
+    //                if (!eventBatch.TryAdd(eventData))
+    //                {
+    //                    // Send current batch if full
+    //                    await producerClient.SendAsync(eventBatch);
+    //                    eventBatch.Dispose();
+    //                    using EventDataBatch newBatch = await producerClient.CreateBatchAsync();
+    //                    newBatch.TryAdd(eventData);
+    //                }
+    //            }
+
+    //            // Send any remaining events
+    //            await producerClient.SendAsync(eventBatch);
+
+    //            Console.WriteLine($"[EventHubUploader] Sent {puffs.Count} puff records.");
+    //            return true;
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            Console.WriteLine($"[EventHubUploader] Error sending to Event Hub: {ex.Message}");
+    //            return false;
+    //        }
+    //    }
+    //}
+    public static class EventHubUploader
+    {
+        private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=D5FY6WNY3o4akIha1gQ7qelwicMX8L6nFT1BKpjWxe4=";
+        private static string eventHubName = "pubstream-rd1-central";
+
+        public static async Task<bool> SendPuffsAsync(List<PuffData> puffs)
+        {
+            try
+            {
+                await using var producer = new EventHubProducerClient(connectionString, eventHubName);
+
+                // Convert PuffData to JSON strings
+                var events = new List<EventData>();
+                foreach (var puff in puffs)
+                {
+                    string json = JsonSerializer.Serialize(puff);
+                    events.Add(new EventData(json));
+                }
+
+                // Send the batch
+                using EventDataBatch eventBatch = await producer.CreateBatchAsync();
+                foreach (var e in events)
+                {
+                    if (!eventBatch.TryAdd(e))
+                    {
+                        Console.WriteLine("[EventHub] Event too large for batch, skipping.");
+                        continue;
+                    }
+                }
+
+                await producer.SendAsync(eventBatch);
+                Console.WriteLine($"[EventHub] Sent {events.Count} puff events.");
+                return true; // indicate success
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[EventHub] Failed to send events: {ex.Message}");
+                return false; // indicate failure
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public class PuffData
     {
         public int PuffId { get; set; }
@@ -135,6 +242,102 @@ namespace PUBTransfer
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
         }
+        private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
+        {
+            if (e.Item is IDevice selectedDevice && !_isCollectingData)
+            {
+                _isCollectingData = true;
+                try
+                {
+                    //await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
+                    // 1. Connect to the device
+                    await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
+                    // Store current device details
+                    _currentDevice = new BLEDeviceDetails
+                    {
+                        Device = selectedDevice,
+                        Status = "Connected",
+                        SerialNumber = selectedDevice.Name.Length > 3 ? selectedDevice.Name.Substring(3) : "",
+                        TransferTime = DateTime.UtcNow
+                    };
+                    Globals.CurrentDevice = _currentDevice;
+                    var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
+
+                    //xamarin flow was
+                    //1. Read header (done)
+                    //2. Ack header (done)
+                    //3. Read puff data → parse into PuffData objects (done)
+                    //4. Confirm upload (done)
+                    //5. Push parsed data to database via REST API
+
+                    // STEP 1: Read header
+                    var (headerBytes, resultCode) = await headerChar.ReadAsync();
+                    var header = Encoding.UTF8.GetString(headerBytes);
+                    Console.WriteLine($"[BLE] Header: {header}");
+                    //await DisplayAlert("Header Data", header, "OK");
+                    // STEP 2: Ack header
+                    var parts = header.Split(',');
+                    string serial = parts.Length > 1 ? parts[1] : "";
+                    await AcknowledgeHeaderAsync(headerChar, serial);
+                    // STEP 3: Read data
+                    int batchSize = int.Parse(parts[3]);
+                    int puffCount = int.Parse(parts[4]);
+                    Console.WriteLine($"batchSize {batchSize}");
+                    Console.WriteLine($"puffCount {puffCount}");
+                    //var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial);
+                    var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
+                    //STEP 3: Put data into puffdata objects
+                    ParsePuffData(dataPoints);
+                    //STEP 4: Confirm upload
+                    //if (dataPoints.Count > 0)
+                    //{
+                    //    await ConfirmUploadAsync(headerChar, puffCount);
+                    //}
+                    //STEP 5: Send data to db, find out how to send the PuffData up to the db/event hub
+                    // STEP 5: Push parsed data to backend
+                    //i think this needs to be packaged as some json form to get sent to the event hub
+
+                    //if (_currentDevice?.Puffs?.Count > 0)
+                    //{
+                    //    await PuffUploader.UploadPuffsAsync(_currentDevice.Puffs, currentEnvironment);
+                    //}
+
+
+                    //if (_currentDevice?.Puffs?.Count > 0)
+                    //{
+                    //    string[] rawData = ConvertPuffsToRawData(_currentDevice.Puffs);
+                    //    //make writeMultiRecords
+                    //    //await writeMultiRecords(rawData, "rawdata1");
+                    //    //await writeRecord(rawData);
+                    //    //await writeMultiRecordsAsync(rawData);
+                    //}
+
+                    if (_currentDevice?.Puffs?.Count > 0)
+                    {
+                        bool success = await EventHubUploader.SendPuffsAsync(_currentDevice.Puffs);
+                        if (success)
+                        {
+                            await DisplayAlert("Success", "Puff data sent to Event Hub!", "OK");
+                        }
+                        else
+                        {
+                            await DisplayAlert("Error", "Failed to send data to Event Hub.", "OK");
+                        }
+                    }
+
+
+
+
+
+
+
+                }
+                catch (Exception ex)
+                {
+                    await DisplayAlert("Error", $"Failed to connect or read data: {ex.Message}", "OK");
+                }
+            }
+        }
         private async Task AcknowledgeHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -242,91 +445,6 @@ namespace PUBTransfer
             }
             Console.WriteLine($"[ParsePuffData] Total puffs parsed: {_currentDevice.Puffs.Count}");
         }
-        private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
-        {
-            if (e.Item is IDevice selectedDevice && !_isCollectingData)
-            {
-                _isCollectingData = true;
-                try
-                {
-                    //await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
-                    // 1. Connect to the device
-                    await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
-                    // Store current device details
-                    _currentDevice = new BLEDeviceDetails
-                    {
-                        Device = selectedDevice,
-                        Status = "Connected",
-                        SerialNumber = selectedDevice.Name.Length > 3 ? selectedDevice.Name.Substring(3) : "",
-                        TransferTime = DateTime.UtcNow
-                    };
-                    Globals.CurrentDevice = _currentDevice;
-                    var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
-
-                    //xamarin flow was
-                    //1. Read header (done)
-                    //2. Ack header (done)
-                    //3. Read puff data → parse into PuffData objects (done)
-                    //4. Confirm upload (done)
-                    //5. Push parsed data to database via REST API
-
-                    // STEP 1: Read header
-                    var (headerBytes, resultCode) = await headerChar.ReadAsync();
-                    var header = Encoding.UTF8.GetString(headerBytes);
-                    Console.WriteLine($"[BLE] Header: {header}");
-                    //await DisplayAlert("Header Data", header, "OK");
-                    // STEP 2: Ack header
-                    var parts = header.Split(',');
-                    string serial = parts.Length > 1 ? parts[1] : "";
-                    await AcknowledgeHeaderAsync(headerChar, serial);
-                    // STEP 3: Read data
-                    int batchSize = int.Parse(parts[3]);
-                    int puffCount = int.Parse(parts[4]);
-                    Console.WriteLine($"batchSize {batchSize}");
-                    Console.WriteLine($"puffCount {puffCount}");
-                    //var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial);
-                    var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
-                    //STEP 3: Put data into puffdata objects
-                    ParsePuffData(dataPoints);
-                    //STEP 4: Confirm upload
-                    //if (dataPoints.Count > 0)
-                    //{
-                    //    await ConfirmUploadAsync(headerChar, puffCount);
-                    //}
-                    //STEP 5: Send data to db, find out how to send the PuffData up to the db/event hub
-                    // STEP 5: Push parsed data to backend
-                    //i think this needs to be packaged as some json form to get sent to the event hub
-
-                    //if (_currentDevice?.Puffs?.Count > 0)
-                    //{
-                    //    await PuffUploader.UploadPuffsAsync(_currentDevice.Puffs, currentEnvironment);
-                    //}
-                    if (_currentDevice?.Puffs?.Count > 0)
-                    {
-                        string[] rawData = ConvertPuffsToRawData(_currentDevice.Puffs);
-                        //make writeMultiRecords
-                        //await writeMultiRecords(rawData, "rawdata1");
-                        //await writeRecord(rawData);
-                        //await writeMultiRecordsAsync(rawData);
-                    }
-
-
-
-
-
-
-
-                }
-                catch (Exception ex)
-                {
-                    await DisplayAlert("Error", $"Failed to connect or read data: {ex.Message}", "OK");
-                }
-            }
-        }
-
-
-
-
         //this is fine because even if writeMultiRecords only suypports PUBs its likely that the VUSE data will need to be in this structure as well
         public string[] ConvertPuffsToRawData(List<PuffData> puffs)
         {
