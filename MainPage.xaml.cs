@@ -257,7 +257,7 @@ namespace PUBTransfer
             byte[] payload = Encoding.UTF8.GetBytes(responseString);
             await characteristic.WriteAsync(payload);
             Console.WriteLine($"[Header Ack Sent] {responseString}");
-            //await DisplayAlert("Sending Header Response Data", responseString, "OK");
+            await DisplayAlert("Sending Header Response Data", responseString, "OK");
         }
         private async Task<List<string>> ReadDataBatchAsync(ICharacteristic headerChar, int batchSize, int puffCount, string serialNumber, Page page)
         {
