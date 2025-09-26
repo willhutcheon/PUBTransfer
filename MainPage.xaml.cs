@@ -11,57 +11,12 @@ using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
-
-
-
-
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using System.Text.Json;
+
 namespace PUBTransfer
 {
-    //public static class EventHubUploader
-    //{
-    //    //private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=<policy-key>";
-    //    private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=D5FY6WNY3o4akIha1gQ7qelwicMX8L6nFT1BKpjWxe4=";
-    //    private static string eventHubName = "pubstream-rd1-central";
-
-    //    public static async Task<bool> SendPuffsAsync(List<PuffData> puffs)
-    //    {
-    //        await using var producerClient = new EventHubProducerClient(connectionString, eventHubName);
-
-    //        try
-    //        {
-    //            using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
-
-    //            foreach (var puff in puffs)
-    //            {
-    //                var json = JsonSerializer.Serialize(puff);
-    //                var eventData = new EventData(json);
-
-    //                if (!eventBatch.TryAdd(eventData))
-    //                {
-    //                    // Send current batch if full
-    //                    await producerClient.SendAsync(eventBatch);
-    //                    eventBatch.Dispose();
-    //                    using EventDataBatch newBatch = await producerClient.CreateBatchAsync();
-    //                    newBatch.TryAdd(eventData);
-    //                }
-    //            }
-
-    //            // Send any remaining events
-    //            await producerClient.SendAsync(eventBatch);
-
-    //            Console.WriteLine($"[EventHubUploader] Sent {puffs.Count} puff records.");
-    //            return true;
-    //        }
-    //        catch (Exception ex)
-    //        {
-    //            Console.WriteLine($"[EventHubUploader] Error sending to Event Hub: {ex.Message}");
-    //            return false;
-    //        }
-    //    }
-    //}
     public static class EventHubUploader
     {
         private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=D5FY6WNY3o4akIha1gQ7qelwicMX8L6nFT1BKpjWxe4=";
@@ -72,7 +27,6 @@ namespace PUBTransfer
             try
             {
                 await using var producer = new EventHubProducerClient(connectionString, eventHubName);
-
                 // Convert PuffData to JSON strings
                 var events = new List<EventData>();
                 foreach (var puff in puffs)
@@ -80,7 +34,6 @@ namespace PUBTransfer
                     string json = JsonSerializer.Serialize(puff);
                     events.Add(new EventData(json));
                 }
-
                 // Send the batch
                 using EventDataBatch eventBatch = await producer.CreateBatchAsync();
                 foreach (var e in events)
@@ -91,7 +44,6 @@ namespace PUBTransfer
                         continue;
                     }
                 }
-
                 await producer.SendAsync(eventBatch);
                 Console.WriteLine($"[EventHub] Sent {events.Count} puff events.");
                 return true; // indicate success
@@ -103,27 +55,6 @@ namespace PUBTransfer
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public class PuffData
     {
         public int PuffId { get; set; }
@@ -293,25 +224,7 @@ namespace PUBTransfer
                     //{
                     //    await ConfirmUploadAsync(headerChar, puffCount);
                     //}
-                    //STEP 5: Send data to db, find out how to send the PuffData up to the db/event hub
-                    // STEP 5: Push parsed data to backend
-                    //i think this needs to be packaged as some json form to get sent to the event hub
-
-                    //if (_currentDevice?.Puffs?.Count > 0)
-                    //{
-                    //    await PuffUploader.UploadPuffsAsync(_currentDevice.Puffs, currentEnvironment);
-                    //}
-
-
-                    //if (_currentDevice?.Puffs?.Count > 0)
-                    //{
-                    //    string[] rawData = ConvertPuffsToRawData(_currentDevice.Puffs);
-                    //    //make writeMultiRecords
-                    //    //await writeMultiRecords(rawData, "rawdata1");
-                    //    //await writeRecord(rawData);
-                    //    //await writeMultiRecordsAsync(rawData);
-                    //}
-
+                    //STEP 5: Push parsed data to backend
                     if (_currentDevice?.Puffs?.Count > 0)
                     {
                         bool success = await EventHubUploader.SendPuffsAsync(_currentDevice.Puffs);
@@ -324,13 +237,6 @@ namespace PUBTransfer
                             await DisplayAlert("Error", "Failed to send data to Event Hub.", "OK");
                         }
                     }
-
-
-
-
-
-
-
                 }
                 catch (Exception ex)
                 {
