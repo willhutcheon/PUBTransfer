@@ -19,8 +19,11 @@ namespace PUBTransfer
 {
     public static class EventHubUploader
     {
-        private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=D5FY6WNY3o4akIha1gQ7qelwicMX8L6nFT1BKpjWxe4=";
-        private static string eventHubName = "pubstream-rd1-central";
+        //prod
+        //private static string connectionString = "Endpoint=sb://EH-CME-PUBDelivery-CENTRAL.servicebus.windows.net/;SharedAccessKeyName=pubstream-policy-central;SharedAccessKey=D5FY6WNY3o4akIha1gQ7qelwicMX8L6nFT1BKpjWxe4=";
+        //dev
+        private static string connectionString = "Endpoint=sb://eh-cme-pubdelivery-central-dev.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=meH+L8ec18ALUA8Cyq7LysSuXrb4Ho9tpQGpsQpyH38=";
+        private static string eventHubName = "pubstream-rd1-central-dev";
 
         public static async Task<bool> SendPuffsAsync(List<PuffData> puffs)
         {
@@ -220,10 +223,10 @@ namespace PUBTransfer
                     //STEP 3: Put data into puffdata objects
                     ParsePuffData(dataPoints);
                     //STEP 4: Confirm upload
-                    //if (dataPoints.Count > 0)
-                    //{
-                    //    await ConfirmUploadAsync(headerChar, puffCount);
-                    //}
+                    if (dataPoints.Count > 0)
+                    {
+                        await ConfirmUploadAsync(headerChar, puffCount);
+                    }
                     //STEP 5: Push parsed data to backend
                     if (_currentDevice?.Puffs?.Count > 0)
                     {
