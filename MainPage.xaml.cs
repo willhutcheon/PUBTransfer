@@ -175,6 +175,8 @@ namespace PUBTransfer
             _bluetoothLE = CrossBluetoothLE.Current;
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
+
+
         }
         private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
         {
