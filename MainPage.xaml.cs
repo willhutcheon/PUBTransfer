@@ -183,7 +183,7 @@ namespace PUBTransfer
                 _isCollectingData = true;
                 try
                 {
-                    await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
+                    //await DisplayAlert("Connecting", $"Connecting to {selectedDevice.Name}...", "OK");
                     // 1. Connect to the device
                     await _bluetoothAdapter.ConnectToDeviceAsync(selectedDevice);
                     // Store current device details
@@ -196,7 +196,7 @@ namespace PUBTransfer
                     };
                     Globals.CurrentDevice = _currentDevice;
                     var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
-                    await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}...", "OK");
+                    //await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}...", "OK");
                     // STEP 1: Read header
                     var (headerBytes, resultCode) = await headerChar.ReadAsync();
                     //var header = Encoding.UTF8.GetString(headerBytes);
@@ -228,8 +228,11 @@ namespace PUBTransfer
                         if (success)
                         {
 #if ANDROID
+                            //var buzz = new PUBTransfer.Platforms.Android.BuzzAndDing(Android.App.Application.Context);
+                            //buzz.Ding();
+
                             var buzz = new PUBTransfer.Platforms.Android.BuzzAndDing(Android.App.Application.Context);
-                            buzz.Ding();
+                            buzz.ShowNotification("Upload Complete", "Puff data sent to Event Hub!");
 #elif IOS
                             //var buzz = new PUBTransfer.Platforms.iOS.BuzzAndDing();
                             //buzz.Ding();
@@ -239,7 +242,7 @@ namespace PUBTransfer
                             notifier.ShowNotification("Upload Complete", "Puff data sent to Event Hub!");
                             notifier.Release();
 #endif
-                            await DisplayAlert("Success", "Puff data sent to Event Hub!", "OK");
+                            //await DisplayAlert("Success", "Puff data sent to Event Hub!", "OK");
                         }
                         else
                         {
@@ -260,7 +263,7 @@ namespace PUBTransfer
             byte[] payload = System.Text.Encoding.UTF8.GetBytes(responseString);
             await characteristic.WriteAsync(payload);
             Console.WriteLine($"[Header Ack Sent] {responseString}");
-            await DisplayAlert("Sending Header Response Data", responseString, "OK");
+            //await DisplayAlert("Sending Header Response Data", responseString, "OK");
         }
         private async Task<List<string>> ReadDataBatchAsync(ICharacteristic headerChar, int batchSize, int puffCount, string serialNumber, Page page)
         {
@@ -284,7 +287,7 @@ namespace PUBTransfer
                 if (dataPoints.Count > 0)
                 {
                     var allData = string.Join(System.Environment.NewLine, dataPoints);
-                    await page.DisplayAlert("Puff Data", allData, "OK");
+                    //await page.DisplayAlert("Puff Data", allData, "OK");
                 }
                 else
                 {
