@@ -1,11 +1,128 @@
-﻿#if IOS
+﻿//#if IOS
+//using AudioToolbox;
+//using AVFoundation;
+//using Foundation;
+//using UIKit;
+
+//namespace PUBTransfer.Platforms.iOS
+//{
+//    public class BuzzAndDing
+//    {
+//        private AVAudioPlayer player;
+//        public BuzzAndDing()
+//        {
+//            // Configure audio session
+//            var session = AVAudioSession.SharedInstance();
+//            session.SetCategory(AVAudioSessionCategory.Playback, AVAudioSessionCategoryOptions.MixWithOthers);
+//            session.SetActive(true);
+//            // Load sound
+//            var url = NSBundle.MainBundle.GetUrlForResource("ding", "wav");
+//            if (url != null)
+//            {
+//                player = AVAudioPlayer.FromUrl(url);
+//                player.PrepareToPlay();
+//            }
+//        }
+//        public void Ding()
+//        {
+//            player?.Play();
+//            UIDevice.CurrentDevice.PlayInputClick(); // light haptic
+//            SystemSound.Vibrate.PlaySystemSound();   // default vibration
+//        }
+//        public void Release()
+//        {
+//            player?.Dispose();
+//            player = null;
+//        }
+//    }
+//}
+//#endif
+
+
+#if IOS
 using AudioToolbox;
 using AVFoundation;
 using Foundation;
 using UIKit;
+using UserNotifications;
 
 namespace PUBTransfer.Platforms.iOS
 {
+    public class NotificationHelper
+    {
+        private AVAudioPlayer player;
+
+        public NotificationHelper()
+        {
+            // Load custom sound if available
+            var url = NSBundle.MainBundle.GetUrlForResource("ding", "wav");
+            if (url != null)
+            {
+                player = AVAudioPlayer.FromUrl(url);
+                player.PrepareToPlay();
+            }
+        }
+
+        /// <summary>
+        /// Request notification permissions
+        /// </summary>
+        public async System.Threading.Tasks.Task RequestPermissionsAsync()
+        {
+            var center = UNUserNotificationCenter.Current;
+            var (granted, error) = await center.RequestAuthorizationAsync(
+                UNAuthorizationOptions.Alert |
+                UNAuthorizationOptions.Sound |
+                UNAuthorizationOptions.Badge
+            );
+
+            if (!granted)
+                Console.WriteLine("Notifications not allowed!");
+        }
+
+        /// <summary>
+        /// Show a banner notification with optional custom sound
+        /// </summary>
+        public void ShowNotification(string title, string message, bool useCustomSound = true)
+        {
+            // Play custom sound immediately (optional)
+            if (useCustomSound)
+                player?.Play();
+
+            // Vibrate / haptic feedback
+            UIDevice.CurrentDevice.PlayInputClick();
+            SystemSound.Vibrate.PlaySystemSound();
+
+            // Prepare notification content
+            var content = new UNMutableNotificationContent
+            {
+                Title = title,
+                Body = message,
+                Sound = useCustomSound && player != null
+                    ? UNNotificationSound.GetSound("ding.wav")
+                    : UNNotificationSound.Default
+            };
+
+            // Trigger immediately
+            var trigger = UNTimeIntervalNotificationTrigger.CreateTrigger(0.5, false);
+
+            var request = UNNotificationRequest.FromIdentifier(
+                Guid.NewGuid().ToString(), content, trigger);
+
+            UNUserNotificationCenter.Current.AddNotificationRequest(request, (err) =>
+            {
+                if (err != null)
+                    Console.WriteLine($"Error scheduling notification: {err}");
+            });
+        }
+
+        public void Release()
+        {
+            player?.Dispose();
+            player = null;
+        }
+    }
+
+
     public class BuzzAndDing
     {
         private AVAudioPlayer player;

@@ -231,8 +231,13 @@ namespace PUBTransfer
                             var buzz = new PUBTransfer.Platforms.Android.BuzzAndDing(Android.App.Application.Context);
                             buzz.Ding();
 #elif IOS
-                            var buzz = new PUBTransfer.Platforms.iOS.BuzzAndDing();
-                            buzz.Ding();
+                            //var buzz = new PUBTransfer.Platforms.iOS.BuzzAndDing();
+                            //buzz.Ding();
+
+                            var notifier = new PUBTransfer.Platforms.iOS.NotificationHelper();
+                            await notifier.RequestPermissionsAsync(); // Only needed once; you could move this to app startup
+                            notifier.ShowNotification("Upload Complete", "Puff data sent to Event Hub!");
+                            notifier.Release();
 #endif
                             await DisplayAlert("Success", "Puff data sent to Event Hub!", "OK");
                         }
