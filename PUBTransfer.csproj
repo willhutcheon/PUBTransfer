@@ -63,4 +63,7 @@
 		<PackageReference Include="QRCoder" Version="1.6.0" />
 		<PackageReference Include="ZXing.Net" Version="0.16.10" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Platforms\Android\Resources\raw\" />
+	</ItemGroup>
 </Project>

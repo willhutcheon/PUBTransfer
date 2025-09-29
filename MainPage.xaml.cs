@@ -1,4 +1,6 @@
-﻿using Microsoft.Maui.ApplicationModel;
+﻿using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Producer;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Plugin.BLE;
 using Plugin.BLE.Abstractions;
@@ -11,13 +13,10 @@ using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Producer;
 using System.Text.Json;
 
 namespace PUBTransfer
 {
-    //todo: make sure this works / get this working for iphones. i believe i need to understand how the connection works and how connections are remembered on iphone
     public static class EventHubUploader
     {
         //prod
@@ -197,19 +196,11 @@ namespace PUBTransfer
                     };
                     Globals.CurrentDevice = _currentDevice;
                     var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
-
-                    //xamarin flow was
-                    //1. Read header (done)
-                    //2. Ack header (done)
-                    //3. Read puff data → parse into PuffData objects (done)
-                    //4. Confirm upload (done)
-                    //5. Push parsed data to database via REST API
-
-
                     await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}...", "OK");
                     // STEP 1: Read header
                     var (headerBytes, resultCode) = await headerChar.ReadAsync();
-                    var header = Encoding.UTF8.GetString(headerBytes);
+                    //var header = Encoding.UTF8.GetString(headerBytes);
+                    var header = System.Text.Encoding.UTF8.GetString(headerBytes);
                     Console.WriteLine($"[BLE] Header: {header}");
                     //await DisplayAlert("Header Data", header, "OK");
                     // STEP 2: Ack header
@@ -236,6 +227,13 @@ namespace PUBTransfer
                         bool success = await EventHubUploader.SendPuffsAsync(_currentDevice.Puffs);
                         if (success)
                         {
+#if ANDROID
+                            var buzz = new PUBTransfer.Platforms.Android.BuzzAndDing(Android.App.Application.Context);
+                            buzz.Ding();
+#elif IOS
+                            var buzz = new PUBTransfer.Platforms.iOS.BuzzAndDing();
+                            buzz.Ding();
+#endif
                             await DisplayAlert("Success", "Puff data sent to Event Hub!", "OK");
                         }
                         else
@@ -254,7 +252,7 @@ namespace PUBTransfer
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
             string responseString = $"4,{serialNumber},{timeStamp},005";
-            byte[] payload = Encoding.UTF8.GetBytes(responseString);
+            byte[] payload = System.Text.Encoding.UTF8.GetBytes(responseString);
             await characteristic.WriteAsync(payload);
             Console.WriteLine($"[Header Ack Sent] {responseString}");
             await DisplayAlert("Sending Header Response Data", responseString, "OK");
@@ -268,7 +266,7 @@ namespace PUBTransfer
                 for (int i = 0; i < puffCount; i++)
                 {
                     var (dataBytes, resultCode) = await headerChar.ReadAsync();
-                    var dataLine = Encoding.UTF8.GetString(dataBytes);
+                    var dataLine = System.Text.Encoding.UTF8.GetString(dataBytes);
                     if (string.IsNullOrWhiteSpace(dataLine) || !dataLine.StartsWith("DATA"))
                     {
                         Console.WriteLine($"[BLE] Invalid or empty puff data at index {i}: {dataLine}");
@@ -280,7 +278,7 @@ namespace PUBTransfer
                 // Show all puff data in one alert at the end
                 if (dataPoints.Count > 0)
                 {
-                    var allData = string.Join(Environment.NewLine, dataPoints);
+                    var allData = string.Join(System.Environment.NewLine, dataPoints);
                     await page.DisplayAlert("Puff Data", allData, "OK");
                 }
                 else
@@ -377,7 +375,7 @@ namespace PUBTransfer
             {
                 // Example format: "1,100" → ACK command + number of records to delete
                 string confirmString = $"1,{puffCount}";
-                byte[] payload = Encoding.UTF8.GetBytes(confirmString);
+                byte[] payload = System.Text.Encoding.UTF8.GetBytes(confirmString);
                 await characteristic.WriteAsync(payload);
                 Console.WriteLine($"[Upload Confirm Sent] {confirmString}");
                 await Application.Current.MainPage.DisplayAlert("Upload Confirmed", $"Sent: {confirmString}", "OK");
