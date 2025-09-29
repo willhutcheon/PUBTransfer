@@ -230,11 +230,11 @@ namespace PUBTransfer
                         if (success)
                         {
 #if ANDROID
-                            //var buzz = new PUBTransfer.Platforms.Android.BuzzAndDing(Android.App.Application.Context);
-                            //buzz.Ding();
-
                             var buzz = new PUBTransfer.Platforms.Android.BuzzAndDing(Android.App.Application.Context);
-                            buzz.ShowNotification("Upload Complete", "Puff data sent to Event Hub!");
+                            buzz.Ding();
+
+                            //var buzz = new PUBTransfer.Platforms.Android.BuzzAndDing(Android.App.Application.Context);
+                            //buzz.ShowNotification("Upload Complete", "Puff data sent to Event Hub!");
 #elif IOS
                             //var buzz = new PUBTransfer.Platforms.iOS.BuzzAndDing();
                             //buzz.Ding();
