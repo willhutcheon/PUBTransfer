@@ -1,5 +1,6 @@
 ﻿#if IOS
 using Foundation;
+using System.IO;
 #endif
 
 
@@ -248,6 +249,7 @@ namespace PUBTransfer
 
 
 #if IOS
+
 var htmlFile = "modelviewer.html";
 var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
 var htmlContent = File.ReadAllText(htmlPath);
@@ -255,7 +257,7 @@ var htmlContent = File.ReadAllText(htmlPath);
 ModelViewer.Source = new HtmlWebViewSource
 {
     Html = htmlContent,
-    BaseUrl = NSBundle.MainBundle.BundlePath // relative .glb path resolves from here
+    BaseUrl = NSBundle.MainBundle.BundlePath // This tells the WebView where to resolve relative paths
 };
 #endif
 
