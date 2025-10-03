@@ -268,12 +268,10 @@ namespace PUBTransfer.Platforms.iOS
     {
         private AVAudioPlayer player;
         private bool permissionsGranted = false;
-
         public NotificationHelper()
         {
             // Set this instance as the delegate
             UNUserNotificationCenter.Current.Delegate = this;
-
             // Load custom sound from main bundle
             var url = NSBundle.MainBundle.GetUrlForResource("ding", "wav");
             if (url != null)
@@ -282,7 +280,6 @@ namespace PUBTransfer.Platforms.iOS
                 player.PrepareToPlay();
             }
         }
-
         /// <summary>
         /// This method allows notifications to show as banners even when app is in foreground
         /// </summary>
@@ -295,7 +292,6 @@ namespace PUBTransfer.Platforms.iOS
                             UNNotificationPresentationOptions.Sound |
                             UNNotificationPresentationOptions.Badge);
         }
-
         public async Task RequestPermissionsAsync()
         {
             if (permissionsGranted) return;
@@ -306,12 +302,10 @@ namespace PUBTransfer.Platforms.iOS
                 UNAuthorizationOptions.Sound |
                 UNAuthorizationOptions.Badge
             );
-
             permissionsGranted = granted;
             if (!granted)
                 Console.WriteLine("Notifications not allowed!");
         }
-
         public void ShowNotification(string title, string message)
         {
             if (!permissionsGranted)
@@ -319,14 +313,11 @@ namespace PUBTransfer.Platforms.iOS
                 Console.WriteLine("Notification permission not granted.");
                 return;
             }
-
             // Play sound immediately
             player?.Play();
-
             // Haptic feedback & vibration
             UIDevice.CurrentDevice.PlayInputClick();
             SystemSound.Vibrate.PlaySystemSound();
-
             // Prepare notification content
             var content = new UNMutableNotificationContent
             {
@@ -334,19 +325,16 @@ namespace PUBTransfer.Platforms.iOS
                 Body = message,
                 Sound = UNNotificationSound.GetSound("ding.wav")
             };
-
             // Trigger immediately
             var trigger = UNTimeIntervalNotificationTrigger.CreateTrigger(0.1, false);
             var request = UNNotificationRequest.FromIdentifier(
                 Guid.NewGuid().ToString(), content, trigger);
-
             UNUserNotificationCenter.Current.AddNotificationRequest(request, (err) =>
             {
                 if (err != null)
                     Console.WriteLine($"Error scheduling notification: {err}");
             });
         }
-
         public void Release()
         {
             player?.Dispose();

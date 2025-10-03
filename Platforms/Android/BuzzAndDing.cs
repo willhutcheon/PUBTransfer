@@ -56,11 +56,9 @@ namespace PUBTransfer.Platforms.Android
     {
         private readonly Context context;
         private const string CHANNEL_ID = "pubtransfer_channel";
-
         public BuzzAndDing(Context context)
         {
             this.context = context;
-
             // Create notification channel (Android 8+)
             if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
             {
@@ -68,7 +66,6 @@ namespace PUBTransfer.Platforms.Android
                 var description = "Notifications for puff data upload";
                 //var importance = NotificationImportance.Default;
                 var importance = NotificationImportance.High;
-
                 var channel = new NotificationChannel(CHANNEL_ID, name, importance)
                 {
                     Description = description
@@ -78,42 +75,33 @@ namespace PUBTransfer.Platforms.Android
                 notificationManager.CreateNotificationChannel(channel);
             }
         }
-
         public void ShowNotification(string title, string message)
         {
             // Build notification
             //var builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-
             //              .SetPriority((int)NotificationPriority.High)
             //              .SetCategory(NotificationCompat.CategoryMessage)
             //              .SetDefaults((int)(NotificationDefaults.Sound | NotificationDefaults.Vibrate))
             //              .SetVisibility((int)NotificationVisibility.Public)
-
-
             //              .SetContentTitle(title)
             //              .SetContentText(message)
             //              .SetSmallIcon(Resource.Drawable.icon)
             //              .SetPriority((int)NotificationPriority.High)
             //              .SetAutoCancel(true)
             //              .SetDefaults((int)(NotificationDefaults.Sound | NotificationDefaults.Vibrate));
-
             //var notificationManager = NotificationManagerCompat.From(context);
             //notificationManager.Notify(new System.Random().Next(), builder.Build());
-
 
             var builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                           .SetContentTitle("Upload Complete")
                           .SetContentText("Puff data sent to Event Hub!")
-                          .SetSmallIcon(Resource.Drawable.icon) // must exist
+                          .SetSmallIcon(Resource.Drawable.icon)
                           .SetPriority((int)NotificationPriority.High)
                           .SetDefaults((int)(NotificationDefaults.Sound | NotificationDefaults.Vibrate))
                           .SetAutoCancel(true);
-
             var manager = NotificationManagerCompat.From(context);
             manager.Notify(1, builder.Build());
-
         }
-
         // Optional: Keep existing Ding method for immediate sound+vibration
         public void Ding()
         {

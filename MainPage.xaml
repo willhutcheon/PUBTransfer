@@ -2,14 +2,64 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PUBTransfer.MainPage">
-    <ScrollView>
+
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- WebView should fill available space -->
+        <WebView x:Name="ModelViewer"
+             Grid.Row="0"
+             VerticalOptions="FillAndExpand"
+             HorizontalOptions="FillAndExpand" />
+
+        <!-- Other content can go below -->
+        <ListView x:Name="DevicesListView"
+              Grid.Row="1"
+              ItemsSource="{Binding Devices}"
+              ItemTapped="OnDeviceSelected"
+              HasUnevenRows="True">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <StackLayout Padding="10">
+                            <Label Text="{Binding Name}"
+                               TextColor="#512BD4"
+                               FontSize="16" />
+                            <Label Text="{Binding Id}"
+                               FontSize="12"
+                               TextColor="Gray" />
+                        </StackLayout>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+
+    <!--<ScrollView>
         <VerticalStackLayout Padding="30,0" Spacing="25">
-            <!-- App Image & Title -->
-            <Image Source="dotnet_bot.png"
+            --><!-- App Image & Title -->
+            <!--<Image Source="dotnet_bot.png"
                    HeightRequest="185"
                    Aspect="AspectFit"
-                   SemanticProperties.Description="dot net bot in a race car number eight" />
-            <!--<Label Text="Wills .NET MAUI Bluetooth &amp; WiFi"
+                   SemanticProperties.Description="dot net bot in a race car number eight" />-->
+
+
+            <!--remove 10/2-->
+            <!--<WebView x:Name="ModelViewer" />--><!--
+            <Grid>
+                <WebView x:Name="ModelViewer" />
+            </Grid>
+
+
+
+
+
+
+
+
+
+
+
+            --><!--<Label Text="Wills .NET MAUI Bluetooth &amp; WiFi"
                    Style="{StaticResource Headline}"
                    SemanticProperties.HeadingLevel="Level1" />-->
             <!-- === Survey Card === -->
@@ -55,9 +105,9 @@
             
                 </VerticalStackLayout>
             </Frame>-->
-            <!-- DEV/QA/PROD switches -->
+            <!-- DEV/QA/PROD switches --><!--
             <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
-                <!--<HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                --><!--<HorizontalStackLayout Spacing="10" VerticalOptions="Center">
                     <Switch x:Name="sliderDEV" IsToggled="True"/>
                     <Label Text="Development" VerticalOptions="Center"/>
                 </HorizontalStackLayout>
@@ -84,9 +134,9 @@
                 <RadioButton Content="Production"
                     GroupName="EnvironmentGroup"
                     Value="PROD"
-                    CheckedChanged="OnEnvironmentChanged" />-->
+                    CheckedChanged="OnEnvironmentChanged" />--><!--
             </VerticalStackLayout>
-            <!-- WebView for the survey -->
+            --><!-- WebView for the survey -->
             <!--<WebView x:Name="webSurvey"
                      HeightRequest="370"
                      Margin="7"
@@ -98,10 +148,39 @@
             <Image x:Name="qrCodeImage"
                 WidthRequest="300"
                 HeightRequest="300" />-->
-            <Button x:Name="ScanButton" 
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            <!--KEEP-->
+            <!--<Button x:Name="ScanButton" 
                     Text="Scan" 
                     Clicked="OnScanClicked"/>
-            <Button Text="Clear" Clicked="OnClearClicked"/>
+            <Button Text="Clear" Clicked="OnClearClicked"/>-->
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             <!--<CollectionView x:Name="DevicesListView">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
@@ -121,7 +200,7 @@
                         <TextCell Text="{Binding Name}" Detail="{Binding Id}" />
                     </DataTemplate>
                 </ListView.ItemTemplate>
-            </ListView>-->
+            </ListView>--><!--
 
 
             <ListView x:Name="DevicesListView"
@@ -145,7 +224,7 @@
             </ListView>
 
 
-            <!--<Button Text="Show Data" Clicked="OnShowDataClicked" />-->
+            --><!--<Button Text="Show Data" Clicked="OnShowDataClicked" />-->
 
             <!--<Label Text="Puff Data:"
                    FontSize="18"
@@ -160,10 +239,10 @@
                     BackgroundColor="#1E1E1E"
                     TextColor="White"
                     FontSize="14"
-                    Margin="0,0,0,20" />-->
+                    Margin="0,0,0,20" />--><!--
 
 
 
         </VerticalStackLayout>
-    </ScrollView>
+    </ScrollView>-->
 </ContentPage>

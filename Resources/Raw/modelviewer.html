@@ -1,0 +1,196 @@
+﻿<!--<!DOCTYPE html>
+<html>
+<head>-->
+<!--<script src="three.min.js"></script>
+<script src="GLTFLoader.js"></script>-->
+<!--<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.149.0/examples/js/loaders/GLTFLoader.js"></script>-->
+<!--<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>-->
+<!--breakpoints dont work here because its a chrome web view-->
+<!--import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';-->
+<!--</head>
+<body style="margin:0;overflow:hidden;">
+    <script>
+        window.addEventListener('load', function () {
+            if (typeof THREE === 'undefined') {
+                console.error('THREE.js failed to load');
+                return;
+            }
+            console.log('THREE.js loaded, version:', THREE.REVISION);
+            console.log('THREE object keys:', Object.keys(THREE).slice(0, 20));
+            console.log('THREE.GLTFLoader type:', typeof THREE.GLTFLoader);
+            console.log('Checking for GLTFLoader...');
+            // Wait a bit for GLTFLoader to attach
+            setTimeout(function () {
+                console.log('After timeout - THREE.GLTFLoader type:', typeof THREE.GLTFLoader);
+                if (typeof THREE.GLTFLoader === 'undefined') {
+                    console.error('GLTFLoader still not available after timeout');
+                    console.log('Available THREE properties:', Object.keys(THREE));
+                    return;
+                }
+                console.log('GLTFLoader is available, creating scene...');
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(renderer.domElement);
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+                const light = new THREE.DirectionalLight(0xffffff, 1);
+                light.position.set(1, 1, 1);
+                scene.add(light);
+                const loader = new THREE.GLTFLoader();
+                //loader.load("concrete-barrier.glb",
+                //    (gltf) => {
+                //        scene.add(gltf.scene);
+                //        console.log("Model loaded successfully!");
+                //    },
+                //    undefined,
+                //    (err) => {
+                //        console.error("Model load error:", err);
+                //    }
+                //);
+
+                //loader.load("file:///android_res/raw/concrete-barrier.glb", (gltf) => {
+                //    scene.add(gltf.scene);
+                //});
+
+
+                //making scene but its complaining that its being blocked from accessing this
+                //hardcode a triangle instead
+                loader.load("concrete-barrier.glb", (gltf) => {
+                    scene.add(gltf.scene);
+                });
+
+
+
+
+                camera.position.z = 5;
+                function animate() {
+                    requestAnimationFrame(animate);
+                    scene.rotation.y += 0.01;
+                    renderer.render(scene, camera);
+                }
+                animate();
+            }, 500);
+        });
+    </script>
+</body>
+</html>-->
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="three.min.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh; /* prevent collapse on Android */
+        }
+    </style>
+</head>
+<body>
+    <script>
+        window.addEventListener('load', function () {
+            console.log("=== Page loaded ===");
+            if (typeof THREE === 'undefined') {
+                alert("THREE.js not loaded!");
+                return;
+            }
+            console.log("THREE.js loaded, version:", THREE.REVISION);
+            try {
+                // Scene
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x808080);
+                // Camera
+                const camera = new THREE.PerspectiveCamera(
+                    75,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    100
+                );
+                camera.position.z = 3;
+                // Renderer
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setClearColor(0x808080, 1);
+                renderer.setSize(window.innerWidth, window.innerHeight, false);
+                document.body.appendChild(renderer.domElement);
+                const canvas = renderer.domElement;
+                canvas.style.width = "100%";
+                canvas.style.height = "100%";
+                console.log("Canvas size:", canvas.width, "x", canvas.height);
+                console.log("Canvas CSS:", canvas.style.cssText);
+                // Handle resize
+                window.addEventListener('resize', () => {
+                    const width = window.innerWidth;
+                    const height = window.innerHeight;
+                    camera.aspect = width / height;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(width, height, false);
+                    console.log("Resized to:", width, "x", height);
+                });
+                // Geometry
+                const geometry = new THREE.BufferGeometry();
+                const vertices = new Float32Array([
+                    0.0, 1.0, 0.0,
+                    -1.0, -1.0, 0.0,
+                    1.0, -1.0, 0.0
+                ]);
+                geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                geometry.setIndex([0, 1, 2]);
+                // Material + Mesh
+                const material = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+                const triangle = new THREE.Mesh(geometry, material);
+                scene.add(triangle);
+                // Animate
+                let frameCount = 0;
+                function animate() {
+                    requestAnimationFrame(animate);
+                    triangle.rotation.y += 0.01;
+                    triangle.rotation.x += 0.01;
+                    renderer.render(scene, camera);
+                    frameCount++;
+                    if (frameCount === 1) console.log("First frame rendered!");
+                    if (frameCount === 60) console.log("60 frames rendered successfully");
+                }
+                animate();
+                console.log("=== Setup complete ===");
+            } catch (error) {
+                console.error("ERROR:", error.message);
+                console.error("Stack:", error.stack);
+                alert("Error: " + error.message);
+            }
+            // WebGL test
+            console.log("WebGL supported?", (() => {
+                try {
+                    const canvas = document.createElement("canvas");
+                    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+                    return !!gl;
+                } catch (e) {
+                    return false;
+                }
+            })());
+        });
+    </script>
+</body>
+</html>
