@@ -1,4 +1,12 @@
-﻿//using Android.Media;
+﻿#if IOS
+using Foundation;
+#endif
+
+
+
+
+
+//using Android.Media;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 //using Java.IO;
@@ -237,6 +245,25 @@ namespace PUBTransfer
         }
     });
 #endif
+
+
+#if IOS
+var htmlFile = "modelviewer.html";
+var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+var htmlContent = File.ReadAllText(htmlPath);
+
+ModelViewer.Source = new HtmlWebViewSource
+{
+    Html = htmlContent,
+    BaseUrl = NSBundle.MainBundle.BundlePath // relative .glb path resolves from here
+};
+#endif
+
+
+
+
+
+
             ModelViewer.Source = new UrlWebViewSource
             {
                 Url = "file:///android_asset/modelviewer.html"
