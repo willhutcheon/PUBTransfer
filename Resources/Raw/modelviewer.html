@@ -1,15 +1,15 @@
 ﻿<!--<!DOCTYPE html>
 <html>
-<head>-->
-<!--<script src="three.min.js"></script>
-<script src="GLTFLoader.js"></script>-->
-<!--<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.149.0/examples/js/loaders/GLTFLoader.js"></script>-->
-<!--<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>-->
-<!--breakpoints dont work here because its a chrome web view-->
-<!--import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';-->
-<!--</head>
+<head>
+<script src="three.min.js"></script>
+<script src="GLTFLoader.js"></script>
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.149.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+breakpoints dont work here because its a chrome web view
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+</head>
 <body style="margin:0;overflow:hidden;">
     <script>
         window.addEventListener('load', function () {
@@ -87,7 +87,9 @@
 
 
 
-<!DOCTYPE html>
+
+
+<!--<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -190,6 +192,94 @@
                     return false;
                 }
             })());
+        });
+    </script>
+</body>
+</html>-->
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        window.addEventListener('load', () => {
+            if (typeof THREE === 'undefined') {
+                alert("THREE.js not loaded!");
+                return;
+            }
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x808080);
+            const camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                100
+            );
+            camera.position.z = 5;
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            // GLTFLoader
+            const loader = new THREE.GLTFLoader();
+            // NOTE: On Android, put concrete-barrier.glb in Assets folder
+            //       On iOS, put it in Resources folder and use the correct path
+            loader.load(
+                "concrete-barrier.glb",
+                (gltf) => {
+                    scene.add(gltf.scene);
+                    console.log("Model loaded successfully!");
+                },
+                undefined,
+                (error) => {
+                    console.error("Error loading model:", error);
+                }
+            );
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            function animate() {
+                requestAnimationFrame(animate);
+                // Optional rotation
+                if (scene.children.length > 0) {
+                    scene.children.forEach(obj => { obj.rotation.y += 0.01; });
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
         });
     </script>
 </body>
