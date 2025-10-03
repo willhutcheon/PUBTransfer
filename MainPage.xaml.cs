@@ -270,7 +270,19 @@ namespace PUBTransfer
 
 
 
-                    var altoHeaderChar = await GetHeaderCharacteristicAltoAsync(selectedDevice);
+                    //var altoHeaderChar = await GetHeaderCharacteristicAltoAsync(selectedDevice);
+                    var (notifyChar, writeChar) = await GetHeaderCharacteristicAltoAsync(selectedDevice, "1192");
+
+                    if (notifyChar != null && writeChar != null)
+                    {
+                        Console.WriteLine("Header handshake sent, notifications subscribed.");
+
+                        // Later, after receiving the header notification, ACK it:
+                        string ack = $"4,1192,{DateTime.Now:MM/dd/yyyy HH:mm:ss},005";
+                        await writeChar.WriteAsync(Encoding.UTF8.GetBytes(ack));
+                        Console.WriteLine($"[BLE] Sent header ACK: {ack}");
+                    }
+
 
 
 
@@ -612,92 +624,284 @@ namespace PUBTransfer
         //App ACKs data.
         //Repeat until batch is done, then PUB disconnects.
 
-        private async Task<ICharacteristic?> GetHeaderCharacteristicAltoAsync(IDevice device)
+        private async Task<(ICharacteristic? NotifyChar, ICharacteristic? WriteChar)> GetHeaderCharacteristicAltoAsync(IDevice device, string serial)
         {
             try
             {
-                var servicesz = await device.GetServicesAsync();
-                foreach (var service in servicesz)
-                {
-                    Console.WriteLine($"Service: {service.Id}");
-                    var characteristics = await service.GetCharacteristicsAsync();
-                    foreach (var ch in characteristics)
-                    {
-                        Console.WriteLine($"  Characteristic: {ch.Id} | Read={ch.CanRead} Write={ch.CanWrite} Update={ch.CanUpdate}");
-                    }
-                }
-
-
-
                 var services = await device.GetServicesAsync();
+
+                ICharacteristic? notifyChar = null;
+                ICharacteristic? writeChar = null;
+
                 foreach (var service in services)
                 {
                     var characteristics = await service.GetCharacteristicsAsync();
+
                     foreach (var c in characteristics)
                     {
-                        if (c.Id == Globals.HeaderCharacteristicId)
+                        Console.WriteLine($"[BLE] Service: {service.Id} | Characteristic: {c.Id} | Read={c.CanRead} Write={c.CanWrite} Update={c.CanUpdate}");
+
+                        // Notify characteristic
+                        if (c.Id == Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b") && c.CanUpdate)
                         {
-                            Console.WriteLine($"[BLE] Found Header Characteristic: {c.Id}");
-                            //if (c.CanUpdate)
-                            //{
-                            //    // Subscribe to notifications
-                            //    c.ValueUpdated += (s, e) =>
-                            //    {
-                            //        var data = e.Characteristic.Value; // byte[]
-                            //        Console.WriteLine($"[BLE] Update received: {BitConverter.ToString(data)}");
-                            //        // TODO: parse ALTO data here
-                            //    };
-                            //    await c.StartUpdatesAsync();
-                            //    Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
-                            //}
-                            //else
-                            //{
-                            //    Console.WriteLine("[BLE] Characteristic does not support updates.");
-                            //}
-                            if (c.CanUpdate)
+                            notifyChar = c;
+
+                            // Subscribe to notifications
+                            c.ValueUpdated += (s, e) =>
                             {
-                                c.ValueUpdated += async (s, e) =>
-                                {
-                                    var data = e.Characteristic.Value; // raw header packet
-                                    var header = System.Text.Encoding.UTF8.GetString(data);
-                                    Console.WriteLine($"[BLE] Header received: {header}");
-                                    // Parse header if you want, or just ACK immediately
-                                    string serialNumber = "1192"; // TODO: parse or store device serial
-                                    string now = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
-                                    string transferDelay = "025"; // ms, depends on spec
-                                    string ackPacket = $"4,{serialNumber},{now},{transferDelay}";
-                                    byte[] ackBytes = System.Text.Encoding.UTF8.GetBytes(ackPacket);
-                                    await c.WriteAsync(ackBytes);
-                                    Console.WriteLine($"[BLE] Sent Header ACK: {ackPacket}");
-                                };
+                                var data = e.Characteristic.Value;
+                                Console.WriteLine($"[BLE] Notification received: {BitConverter.ToString(data)}");
+                            };
 
-                                //i need to send a "header request" here to get the header, then i need to subscribe to updates
-                                //var altoHeaderChar = await GetHeaderCharacteristicAltoAsync(selectedDevice);
-                                //string serial = "1192";
-                                //await AcknowledgeAltoHeaderAsync(altoHeaderChar, serial);
-                                string serial = "1192";
-                                //how can i write to some characteristic to acknowledge a header / tell the pub to start talking if the characteristic is canWrite = false
-                                //i probably can "write" to this through updating it
-                                await AcknowledgeAltoHeaderAsync(c, serial);
+                            await c.StartUpdatesAsync();
+                            Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
+                        }
 
-
-
-                                await c.StartUpdatesAsync();
-                                Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
-                            }
-                            return c;
+                        // Writable characteristic (for handshake)
+                        if (c.CanWrite && writeChar == null)
+                        {
+                            writeChar = c;
                         }
                     }
                 }
-                Console.WriteLine("[BLE] Header characteristic not found!");
-                return null;
+
+                if (notifyChar == null)
+                {
+                    Console.WriteLine("[BLE] Notify characteristic not found!");
+                    return (null, null);
+                }
+
+                if (writeChar == null)
+                {
+                    Console.WriteLine("[BLE] Writable characteristic not found!");
+                    return (notifyChar, null);
+                }
+
+                // Send initial header request handshake
+                string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+                string handshake = $"2,{serial},{timeStamp},005";
+                await writeChar.WriteAsync(Encoding.UTF8.GetBytes(handshake));
+                Console.WriteLine($"[BLE] Sent header request handshake: {handshake}");
+
+                return (notifyChar, writeChar);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[BLE] Error in GetHeaderCharacteristicAltoAsync: {ex.Message}");
-                return null;
+                return (null, null);
             }
         }
+
+
+
+        //private async Task<ICharacteristic?> GetHeaderCharacteristicAltoAsync(IDevice device)
+        //{
+        //    try
+        //    {
+        //        //var services = await device.GetServicesAsync();
+
+        //        //foreach (var service in services)
+        //        //{
+        //        //    Console.WriteLine($"Service: {service.Id}");
+        //        //    var characteristics = await service.GetCharacteristicsAsync();
+        //        //    foreach (var characteristic in characteristics)
+        //        //    {
+        //        //        Console.WriteLine($"  Characteristic: {characteristic.Id}");
+
+        //        //        // Check if this is your notify characteristic (fd5abba1…)
+        //        //        if (characteristic.Id.ToString().StartsWith("fd5abba1", StringComparison.OrdinalIgnoreCase)
+        //        //            && characteristic.CanUpdate)
+        //        //        {
+        //        //            // Subscribe to notifications
+        //        //            characteristic.ValueUpdated += (s, e) =>
+        //        //            {
+        //        //                var data = e.Characteristic.Value;
+        //        //                Console.WriteLine($"Notification received: {BitConverter.ToString(data)}");
+        //        //            };
+
+        //        //            //break here hits, do i need to print these values to the console after this function call
+        //        //            await characteristic.StartUpdatesAsync(); // Keeps it active
+
+
+        //        //            await Task.Delay(-1); // keeps app alive indefinitely
+
+        //        //        }
+        //        //    }
+        //        //}
+
+
+
+
+
+
+
+
+
+
+        //        //write to a descriptor with uuid 2902
+
+
+        //        var servicess = await device.GetServicesAsync();
+        //        foreach (var service in servicess)
+        //        {
+        //            Console.WriteLine($"[BLE] Service: {service.Id}");
+        //            var characteristics = await service.GetCharacteristicsAsync();
+        //            foreach (var ch in characteristics)
+        //            {
+        //                Console.WriteLine($"  [BLE] Characteristic: {ch.Id} | Read={ch.CanRead} Write={ch.CanWrite} Update={ch.CanUpdate}");
+        //            }
+        //        }
+
+
+
+
+        //        //var servicesx = await device.GetServicesAsync();
+        //        //foreach (var service in servicesx)
+        //        //{
+        //        //    if (service.Id == Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b"))
+        //        //    {
+        //        //        var characteristics = await service.GetCharacteristicsAsync();
+        //        //        foreach (var ch in characteristics)
+        //        //        {
+        //        //            if (ch.Id == Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b"))
+        //        //            {
+        //        //                // Subscribe to notifications
+        //        //                ch.ValueUpdated += (s, e) =>
+        //        //                {
+        //        //                    var data = e.Characteristic.Value; // raw byte[]
+        //        //                    Console.WriteLine($"[BLE] Notification: {BitConverter.ToString(data)}");
+
+        //        //                    // TODO: Parse header/data according to PUB spec
+        //        //                };
+
+        //        //                await ch.StartUpdatesAsync();
+        //        //            }
+        //        //        }
+        //        //    }
+        //        //}
+
+
+
+        //        //var servicesz = await device.GetServicesAsync();
+        //        //foreach (var service in servicesz)
+        //        //{
+        //        //    Console.WriteLine($"Service: {service.Id}");
+        //        //    var characteristics = await service.GetCharacteristicsAsync();
+        //        //    foreach (var ch in characteristics)
+        //        //    {
+        //        //        Console.WriteLine($"  Characteristic: {ch.Id} | Read={ch.CanRead} Write={ch.CanWrite} Update={ch.CanUpdate}");
+        //        //    }
+        //        //}
+
+
+
+        //        //var services = await device.GetServicesAsync();
+        //        //foreach (var service in services)
+        //        //{
+        //        //    var characteristics = await service.GetCharacteristicsAsync();
+        //        //    foreach (var c in characteristics)
+        //        //    {
+        //        //        if (c.Id == Globals.HeaderCharacteristicId)
+        //        //        {
+        //        //            Console.WriteLine($"[BLE] Found Header Characteristic: {c.Id}");
+        //        //            //if (c.CanUpdate)
+        //        //            //{
+        //        //            //    // Subscribe to notifications
+        //        //            //    c.ValueUpdated += (s, e) =>
+        //        //            //    {
+        //        //            //        var data = e.Characteristic.Value; // byte[]
+        //        //            //        Console.WriteLine($"[BLE] Update received: {BitConverter.ToString(data)}");
+        //        //            //        // TODO: parse ALTO data here
+        //        //            //    };
+        //        //            //    await c.StartUpdatesAsync();
+        //        //            //    Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
+        //        //            //}
+        //        //            //else
+        //        //            //{
+        //        //            //    Console.WriteLine("[BLE] Characteristic does not support updates.");
+        //        //            //}
+        //        //            if (c.CanUpdate)
+        //        //            {
+        //        //                c.ValueUpdated += async (s, e) =>
+        //        //                {
+        //        //                    var data = e.Characteristic.Value; // raw header packet
+        //        //                    var header = System.Text.Encoding.UTF8.GetString(data);
+        //        //                    Console.WriteLine($"[BLE] Header received: {header}");
+        //        //                    // Parse header if you want, or just ACK immediately
+        //        //                    string serialNumber = "1192"; // TODO: parse or store device serial
+        //        //                    string now = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+        //        //                    string transferDelay = "025"; // ms, depends on spec
+        //        //                    string ackPacket = $"4,{serialNumber},{now},{transferDelay}";
+        //        //                    byte[] ackBytes = System.Text.Encoding.UTF8.GetBytes(ackPacket);
+        //        //                    await c.WriteAsync(ackBytes);
+        //        //                    Console.WriteLine($"[BLE] Sent Header ACK: {ackPacket}");
+        //        //                };
+
+        //        //                //i need to send a "header request" here to get the header, then i need to subscribe to updates
+        //        //                //var altoHeaderChar = await GetHeaderCharacteristicAltoAsync(selectedDevice);
+        //        //                //string serial = "1192";
+        //        //                //await AcknowledgeAltoHeaderAsync(altoHeaderChar, serial);
+        //        //                string serial = "1192";
+        //        //                //how can i write to some characteristic to acknowledge a header / tell the pub to start talking if the characteristic is canWrite = false
+        //        //                //i probably can "write" to this through updating it
+        //        //                await AcknowledgeAltoHeaderAsync(c, serial);
+
+
+
+        //        //                await c.StartUpdatesAsync();
+        //        //                Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
+        //        //            }
+        //        //            return c;
+        //        //        }
+        //        //    }
+        //        //}
+        //        //Console.WriteLine("[BLE] Header characteristic not found!");
+        //        //return null;
+
+
+
+
+
+        //        var services = await device.GetServicesAsync();
+
+        //        foreach (var service in services)
+        //        {
+        //            Console.WriteLine($"Service: {service.Id}");
+        //            var characteristics = await service.GetCharacteristicsAsync();
+
+        //            foreach (var characteristic in characteristics)
+        //            {
+        //                Console.WriteLine($"  Characteristic: {characteristic.Id}");
+
+        //                // Check if this is your notify characteristic
+        //                if (characteristic.Id == Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b")
+        //                    && characteristic.CanUpdate)
+        //                {
+        //                    // Subscribe to notifications
+        //                    characteristic.ValueUpdated += (s, e) =>
+        //                    {
+        //                        var data = e.Characteristic.Value;
+        //                        Console.WriteLine($"[BLE] Notification received: {BitConverter.ToString(data)}");
+        //                    };
+
+        //                    await characteristic.StartUpdatesAsync();
+        //                    Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
+
+        //                    // return it to caller so you can use it later
+        //                    return characteristic;
+        //                }
+        //            }
+        //        }
+
+        //        Console.WriteLine("[BLE] Header characteristic not found!");
+        //        return null;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"[BLE] Error in GetHeaderCharacteristicAltoAsync: {ex.Message}");
+        //        return null;
+        //    }
+        //}
         private async Task AcknowledgeAltoHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -941,49 +1145,49 @@ namespace PUBTransfer
                 await Application.Current.MainPage.DisplayAlert("Error", $"Upload confirmation failed: {ex.Message}", "OK");
             }
         }
-        //private async void OnScanClicked(object sender, EventArgs e)
-        //{
-        //    ScanButton.IsEnabled = false;
-        //    ScanButton.Text = "Scanning...";
-        //    try
-        //    {
-        //        var permissionStatus = await RequestBluetoothPermissions();
-        //        if (permissionStatus != PermissionStatus.Granted)
-        //        {
-        //            await DisplayAlert("Permission Denied", "Bluetooth permissions are required", "OK");
-        //            return;
-        //        }
-        //        if (!_bluetoothLE.IsOn)
-        //        {
-        //            await DisplayAlert("Bluetooth Off", "Please enable Bluetooth", "OK");
-        //            return;
-        //        }
-        //        Devices.Clear();
-        //        _bluetoothAdapter.DeviceDiscovered += (s, a) =>
-        //        {
-        //            if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
-        //            {
-        //                if (!Devices.Contains(a.Device))
-        //                {
-        //                    MainThread.BeginInvokeOnMainThread(() =>
-        //                    {
-        //                        Devices.Add(a.Device);
-        //                    });
-        //                }
-        //            }
-        //        };
-        //        await _bluetoothAdapter.StartScanningForDevicesAsync();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        await DisplayAlert("Error", $"Failed to scan: {ex.Message}", "OK");
-        //    }
-        //    finally
-        //    {
-        //        ScanButton.IsEnabled = true;
-        //        ScanButton.Text = "Scan";
-        //    }
-        //}
+        private async void OnScanClicked(object sender, EventArgs e)
+        {
+            ScanButton.IsEnabled = false;
+            ScanButton.Text = "Scanning...";
+            try
+            {
+                var permissionStatus = await RequestBluetoothPermissions();
+                if (permissionStatus != PermissionStatus.Granted)
+                {
+                    await DisplayAlert("Permission Denied", "Bluetooth permissions are required", "OK");
+                    return;
+                }
+                if (!_bluetoothLE.IsOn)
+                {
+                    await DisplayAlert("Bluetooth Off", "Please enable Bluetooth", "OK");
+                    return;
+                }
+                Devices.Clear();
+                _bluetoothAdapter.DeviceDiscovered += (s, a) =>
+                {
+                    if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
+                    {
+                        if (!Devices.Contains(a.Device))
+                        {
+                            MainThread.BeginInvokeOnMainThread(() =>
+                            {
+                                Devices.Add(a.Device);
+                            });
+                        }
+                    }
+                };
+                await _bluetoothAdapter.StartScanningForDevicesAsync();
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Error", $"Failed to scan: {ex.Message}", "OK");
+            }
+            finally
+            {
+                ScanButton.IsEnabled = true;
+                ScanButton.Text = "Scan";
+            }
+        }
         private async Task<PermissionStatus> RequestBluetoothPermissions()
         {
             try

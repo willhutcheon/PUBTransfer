@@ -4,14 +4,14 @@
              x:Class="PUBTransfer.MainPage">
 
 
-    <Grid RowDefinitions="*,Auto">
-        <!-- WebView should fill available space -->
+    <!--<Grid RowDefinitions="*,Auto">
+        --><!-- WebView should fill available space --><!--
         <WebView x:Name="ModelViewer"
              Grid.Row="0"
              VerticalOptions="FillAndExpand"
              HorizontalOptions="FillAndExpand" />
 
-        <!-- Other content can go below -->
+        --><!-- Other content can go below --><!--
         <ListView x:Name="DevicesListView"
               Grid.Row="1"
               ItemsSource="{Binding Devices}"
@@ -32,7 +32,87 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+
+        
+        
+        <StackLayout Grid.Row="2" Orientation="Horizontal" HorizontalOptions="Center" Spacing="20" Margin="0,10">
+            <Button x:Name="ScanButton" 
+                    Text="Scan" 
+                    Clicked="OnScanClicked"/>
+            <Button Text="Clear" 
+                    Clicked="OnClearClicked"/>
+        </StackLayout>
+
+        
+    </Grid>-->
+
+
+
+
+
+    <Grid RowDefinitions="*,*,Auto">
+        <!-- WebView -->
+        <WebView x:Name="ModelViewer"
+             Grid.Row="0"
+             VerticalOptions="FillAndExpand"
+             HorizontalOptions="FillAndExpand" />
+
+        <!-- ListView -->
+        <ListView x:Name="DevicesListView"
+              Grid.Row="1"
+              ItemsSource="{Binding Devices}"
+              ItemTapped="OnDeviceSelected"
+              HasUnevenRows="True">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <StackLayout Padding="10">
+                            <Label Text="{Binding Name}"
+                               TextColor="#512BD4"
+                               FontSize="16" />
+                            <Label Text="{Binding Id}"
+                               FontSize="12"
+                               TextColor="Gray" />
+                        </StackLayout>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Buttons -->
+        <StackLayout Grid.Row="2" Orientation="Horizontal" HorizontalOptions="Center" Spacing="20" Margin="0,10">
+            <Button x:Name="ScanButton" 
+                Text="Scan" 
+                Clicked="OnScanClicked"/>
+            <Button Text="Clear" 
+                Clicked="OnClearClicked"/>
+        </StackLayout>
     </Grid>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     <!--<ScrollView>
         <VerticalStackLayout Padding="30,0" Spacing="25">

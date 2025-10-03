@@ -78,17 +78,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     </script>
 </body>
 </html>-->
-
-
-
-
-
-
-
-
-
-
-
 <!--<!DOCTYPE html>
 <html>
 <head>
@@ -196,15 +185,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     </script>
 </body>
 </html>-->
-
-
-
-
-
-
-
-
-<!DOCTYPE html>
+<!--<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -255,7 +236,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             // NOTE: On Android, put concrete-barrier.glb in Assets folder
             //       On iOS, put it in Resources folder and use the correct path
             loader.load(
-                "concrete-barrier.glb",
+                /*"concrete-barrier.glb",*/
+                "steampunk_vape.glb",
                 (gltf) => {
                     scene.add(gltf.scene);
                     console.log("Model loaded successfully!");
@@ -283,4 +265,204 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         });
     </script>
 </body>
+</html>-->
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        window.addEventListener('load', () => {
+            if (typeof THREE === 'undefined') {
+                alert("THREE.js not loaded!");
+                return;
+            }
+            // Scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x808080);
+            // Camera
+            const camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                100
+            );
+            camera.position.z = 5;
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            // Controls (enable touch + mouse rotation)
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // smooth rotation
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = true;    // optional, allow pinch/scroll zoom
+            controls.enablePan = false;    // optional, disable panning
+            // Load GLTF model
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                "steampunk_vape.glb",
+                (gltf) => {
+                    scene.add(gltf.scene);
+                    console.log("Model loaded successfully!");
+                },
+                undefined,
+                (error) => {
+                    console.error("Error loading model:", error);
+                }
+            );
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            // Animate
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update(); // required if enableDamping = true
+                renderer.render(scene, camera);
+            }
+            animate();
+        });
+    </script>
+</body>
 </html>
+
+
+
+
+<!--to get this to get real data from a .cs file:
+Load Three.js + GLTF model in the WebView as you’re already doing.
+Keep a reference to the model object in JS (let model;).
+From C#, collect the sensor or simulation data.
+Call EvaluateJavaScriptAsync with the new data.
+The model updates in real-time.-->
+
+<!--<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        window.addEventListener('load', () => {
+            if (typeof THREE === 'undefined') {
+                alert("THREE.js not loaded!");
+                return;
+            }
+            // Scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x808080);
+            // Camera
+            const camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                100
+            );
+            camera.position.z = 5;
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            // Load GLTF model
+            const loader = new THREE.GLTFLoader();
+            let model; // store model reference
+            loader.load(
+                "steampunk_vape.glb",
+                (gltf) => {
+                    model = gltf.scene;
+                    scene.add(model);
+                    console.log("Model loaded successfully!");
+                },
+                undefined,
+                (error) => {
+                    console.error("Error loading model:", error);
+                }
+            );
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            // Fake X, Y, Z data (can be dynamic)
+            let fakeDataIndex = 0;
+            const fakeData = [
+                { x: 0, y: 0, z: 0 },
+                { x: 0.5, y: 0.2, z: 0 },
+                { x: -0.5, y: -0.2, z: 0.1 },
+                { x: 0.3, y: 0.4, z: -0.2 },
+                { x: 0, y: 0, z: 0 }
+            ];
+            // Animate
+            function animate() {
+                requestAnimationFrame(animate);
+                if (model) {
+                    // Rotate or move the model using fake data
+                    const data = fakeData[fakeDataIndex];
+                    model.rotation.x = data.x;
+                    model.rotation.y = data.y;
+                    model.rotation.z = data.z;
+
+                    // Advance to next data point every 10 frames
+                    if (performance.now() % 1000 < 16) {
+                        fakeDataIndex = (fakeDataIndex + 1) % fakeData.length;
+                    }
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+        });
+    </script>
+</body>
+</html>-->
