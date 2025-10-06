@@ -31,6 +31,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+
+using EmbedIO;
+
+
+
+
 //using static Java.Util.Concurrent.Flow;
 
 // ALTO HEADER                 PUB, 1000, 4, 100, 500, 1.1, 3.30
@@ -220,10 +226,44 @@ namespace PUBTransfer
         private bool _isCollectingData = false;
         private StringBuilder _logData = new StringBuilder();
         public ObservableCollection<IDevice> Devices { get; set; } = new();
+
+        private WebServer server;
         public MainPage()
         {
             InitializeComponent();
+
+            //StartLocalServer();
+            //this.Loaded += MainPage_Loaded;
+            //webView.Source = "http://localhost:9696/modelviewer.html";
+
+
+#if ANDROID
+    // For Android, load from assets
+    webView.Source = new UrlWebViewSource
+    {
+        Url = "file:///android_asset/modelviewer.html"
+    };
+#elif IOS
+    // For iOS, load HTML directly from the app bundle
+    var htmlFile = "modelviewer.html";
+    var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+    var htmlContent = File.ReadAllText(htmlPath);
+
+    webView.Source = new HtmlWebViewSource
+    {
+        Html = htmlContent,
+        BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
+    };
+#endif
+
+
             DisplayQRCode();
+
+
+
+
+
+
             //#if ANDROID
             //    Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
             //    {
@@ -273,29 +313,80 @@ namespace PUBTransfer
 
 
 
-#if ANDROID
-ModelViewer.Source = new UrlWebViewSource
-{
-    Url = "file:///android_asset/modelviewer.html"
-};
-#elif IOS
-var htmlFile = "modelviewer.html";
-var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
-var htmlContent = File.ReadAllText(htmlPath);
 
-ModelViewer.Source = new HtmlWebViewSource
-{
-    Html = htmlContent,
-    BaseUrl = NSBundle.MainBundle.BundlePath
-};
-#endif
 
-            ModelViewer.HorizontalOptions = LayoutOptions.FillAndExpand;
-            ModelViewer.VerticalOptions = LayoutOptions.FillAndExpand;
+
+
+//#if ANDROID
+//ModelViewer.Source = new UrlWebViewSource
+//{
+//    Url = "file:///android_asset/modelviewer.html"
+//};
+//#elif IOS
+//var htmlFile = "modelviewer.html";
+//var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+//var htmlContent = File.ReadAllText(htmlPath);
+
+//ModelViewer.Source = new HtmlWebViewSource
+//{
+//    Html = htmlContent,
+//    BaseUrl = NSBundle.MainBundle.BundlePath
+//};
+//#endif
+
+            //ModelViewer.HorizontalOptions = LayoutOptions.FillAndExpand;
+            //ModelViewer.VerticalOptions = LayoutOptions.FillAndExpand;
             _bluetoothLE = CrossBluetoothLE.Current;
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
         }
+        private async void MainPage_Loaded(object sender, EventArgs e)
+        {
+            await StartLocalServer();
+            webView.Source = "http://localhost:9696/modelviewer.html";
+        }
+
+        private async Task StartLocalServer()
+        {
+            //Make sure steampunk_vape.glb is actually copied to AppDataDirectory/www by CopyAssetsToLocalFolder().
+            string path = await CopyAssetsToLocalFolder();
+
+            server = new WebServer(o => o
+                    .WithUrlPrefix("http://localhost:9696")
+                    .WithMode(HttpListenerMode.EmbedIO))
+                .WithLocalSessionManager()
+                .WithStaticFolder("/", path, true);
+
+            await server.RunAsync();
+        }
+        private async Task<string> CopyAssetsToLocalFolder()
+        {
+            string destPath = Path.Combine(FileSystem.Current.AppDataDirectory, "www");
+            if (!Directory.Exists(destPath))
+                Directory.CreateDirectory(destPath);
+
+            var assembly = typeof(MainPage).Assembly;
+
+            foreach (var file in new[] { "modelviewer.html", "three.min.js", "steampunk_vape.glb" })
+            {
+                using var stream = assembly.GetManifestResourceStream($"PUBTransfer.Resources.Raw.{file}");
+                if (stream == null) continue;
+
+                var filePath = Path.Combine(destPath, file);
+                using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+                await stream.CopyToAsync(fs);
+            }
+
+            return destPath;
+        }
+
+
+
+
+
+
+
+
         private async void OnDeviceSelected(object sender, ItemTappedEventArgs e)
         {
             if (e.Item is IDevice selectedDevice && !_isCollectingData)
