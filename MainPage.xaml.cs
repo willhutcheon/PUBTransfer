@@ -224,32 +224,61 @@ namespace PUBTransfer
         {
             InitializeComponent();
             DisplayQRCode();
+            //#if ANDROID
+            //    Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+            //    {
+            //        if (handler.PlatformView is Android.Webkit.WebView webView)
+            //        {
+            //            var settings = webView.Settings;
+            //            settings.JavaScriptEnabled = true;
+            //            settings.DomStorageEnabled = true;
+            //            settings.SetSupportZoom(false);
+
+            //            // Critical for WebGL:
+            //            settings.AllowFileAccess = true;
+            //            settings.AllowContentAccess = true;
+            //            settings.AllowFileAccessFromFileURLs = true;
+            //            settings.AllowUniversalAccessFromFileURLs = true;
+
+            //            // Enable WebGL
+            //            settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
+            //            webView.SetLayerType(Android.Views.LayerType.Hardware, null);
+            //        }
+            //    });
+            //#endif
+
+
+            //#if IOS
+
+            //var htmlFile = "modelviewer.html";
+            //var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+            //var htmlContent = File.ReadAllText(htmlPath);
+
+            //ModelViewer.Source = new HtmlWebViewSource
+            //{
+            //    Html = htmlContent,
+            //    BaseUrl = NSBundle.MainBundle.BundlePath // This tells the WebView where to resolve relative paths
+            //};
+            //#endif
+
+
+
+
+
+
+            //            ModelViewer.Source = new UrlWebViewSource
+            //            {
+            //                Url = "file:///android_asset/modelviewer.html"
+            //            };
+
+
+
 #if ANDROID
-    Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
-    {
-        if (handler.PlatformView is Android.Webkit.WebView webView)
-        {
-            var settings = webView.Settings;
-            settings.JavaScriptEnabled = true;
-            settings.DomStorageEnabled = true;
-            settings.SetSupportZoom(false);
-            
-            // Critical for WebGL:
-            settings.AllowFileAccess = true;
-            settings.AllowContentAccess = true;
-            settings.AllowFileAccessFromFileURLs = true;
-            settings.AllowUniversalAccessFromFileURLs = true;
-            
-            // Enable WebGL
-            settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
-            webView.SetLayerType(Android.Views.LayerType.Hardware, null);
-        }
-    });
-#endif
-
-
-#if IOS
-
+ModelViewer.Source = new UrlWebViewSource
+{
+    Url = "file:///android_asset/modelviewer.html"
+};
+#elif IOS
 var htmlFile = "modelviewer.html";
 var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
 var htmlContent = File.ReadAllText(htmlPath);
@@ -257,19 +286,10 @@ var htmlContent = File.ReadAllText(htmlPath);
 ModelViewer.Source = new HtmlWebViewSource
 {
     Html = htmlContent,
-    BaseUrl = NSBundle.MainBundle.BundlePath // This tells the WebView where to resolve relative paths
+    BaseUrl = NSBundle.MainBundle.BundlePath
 };
 #endif
 
-
-
-
-
-
-            ModelViewer.Source = new UrlWebViewSource
-            {
-                Url = "file:///android_asset/modelviewer.html"
-            };
             ModelViewer.HorizontalOptions = LayoutOptions.FillAndExpand;
             ModelViewer.VerticalOptions = LayoutOptions.FillAndExpand;
             _bluetoothLE = CrossBluetoothLE.Current;
