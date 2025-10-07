@@ -353,27 +353,27 @@ namespace PUBTransfer
 
 
             //SHOWS MODEL ON ANDROID, KEEP
-#if IOS
-Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
-{
-    if (handler.PlatformView is WKWebView webView)
-    {
-        webView.Configuration.Preferences.JavaScriptEnabled = true;
-        webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
-        // WebGL is enabled by default in WKWebView
-    }
-});
+//#if IOS
+//Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+//{
+//    if (handler.PlatformView is WKWebView webView)
+//    {
+//        webView.Configuration.Preferences.JavaScriptEnabled = true;
+//        webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
+//        // WebGL is enabled by default in WKWebView
+//    }
+//});
 
-// Load local HTML as embedded string
-var htmlPath = Path.Combine(FileSystem.AppDataDirectory, "modelviewer.html");
-var html = File.ReadAllText(htmlPath);
+//// Load local HTML as embedded string
+//var htmlPath = Path.Combine(FileSystem.AppDataDirectory, "modelviewer.html");
+//var html = File.ReadAllText(htmlPath);
 
-ModelViewer.Source = new HtmlWebViewSource
-{
-    Html = html,
-    BaseUrl = FileSystem.AppDataDirectory // relative paths for assets
-};
-#endif
+//ModelViewer.Source = new HtmlWebViewSource
+//{
+//    Html = html,
+//    BaseUrl = FileSystem.AppDataDirectory // relative paths for assets
+//};
+//#endif
 
 
 
