@@ -351,6 +351,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             controls.enablePan = false;    // optional, disable panning
             // Load GLTF model
             const loader = new THREE.GLTFLoader();
+            //SHOWS MODEL ON ANDROID, KEEP
             loader.load(
                 "steampunk_vape.glb",
                 (gltf) => {
@@ -362,6 +363,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
                     console.error("Error loading model:", error);
                 }
             );
+            //END SHOWS MODEL ON ANDROID, KEEP
+
+
+
 
             //loader.load(
             //    "http://localhost:9696/steampunk_vape.glb",
