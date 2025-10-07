@@ -419,15 +419,16 @@ namespace PUBTransfer
     });
 
     // Load from app bundle
-    var htmlFile = "modelviewer.html";
-    var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
-    var htmlContent = File.ReadAllText(htmlPath);
+    //var htmlFile = "modelviewer.html";
+    //var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+    //var htmlContent = File.ReadAllText(htmlPath);
 
-    ModelViewer.Source = new HtmlWebViewSource
-    {
-        Html = htmlContent,
-        BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
-    };
+    //ModelViewer.Source = new HtmlWebViewSource
+    //{
+    //    Html = htmlContent,
+    //    BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
+    //};
+    
 #endif
 
 
@@ -1498,6 +1499,34 @@ namespace PUBTransfer
         protected override async void OnAppearing()
         {
             base.OnAppearing();
+
+
+
+#if IOS
+        Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+        {
+            if (handler.PlatformView is WebKit.WKWebView webView)
+            {
+                webView.Configuration.Preferences.JavaScriptEnabled = true;
+                webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
+            }
+        });
+
+        using var htmlStream = await FileSystem.OpenAppPackageFileAsync("modelviewer.html");
+        using var reader = new StreamReader(htmlStream);
+        var html = reader.ReadToEnd();
+
+        ModelViewer.Source = new HtmlWebViewSource
+        {
+            Html = html,
+            BaseUrl = NSBundle.MainBundle.BundlePath
+        };
+#endif
+
+
+
+
+
             await UpdateSurveyAsync();
         }
         public async Task UpdateSurveyAsync()
