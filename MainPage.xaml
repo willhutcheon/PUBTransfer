@@ -57,16 +57,16 @@
 
 
         <!-- WebView -->
-        <!--<WebView x:Name="ModelViewer"
+        <WebView x:Name="ModelViewer"
              Grid.Row="0"
              VerticalOptions="FillAndExpand"
-             HorizontalOptions="FillAndExpand" />-->
+             HorizontalOptions="FillAndExpand" />
 
 
-        <WebView x:Name="webView"
+        <!--<WebView x:Name="webView"
          Grid.Row="0"
          HorizontalOptions="FillAndExpand"
-         VerticalOptions="FillAndExpand" />
+         VerticalOptions="FillAndExpand" />-->
 
 
 

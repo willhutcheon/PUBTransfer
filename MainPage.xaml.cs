@@ -10,11 +10,15 @@ using System.IO;
 //using Android.Media;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
+using EmbedIO;
+using Microsoft.Azure.Amqp.Framing;
+
 //using Java.IO;
 
 //using Javax.Annotation.Meta;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Compatibility;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.Maui.Graphics;
 using Plugin.BLE;
@@ -31,8 +35,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
-
-using EmbedIO;
 
 
 
@@ -232,29 +234,36 @@ namespace PUBTransfer
         {
             InitializeComponent();
 
+
+            //Loaded += async (s, e) =>
+            //{
+            //    await StartLocalServer();
+            //    webView.Source = "http://127.0.0.1:9696/modelviewer.html";
+            //};
+
             //StartLocalServer();
             //this.Loaded += MainPage_Loaded;
             //webView.Source = "http://localhost:9696/modelviewer.html";
 
 
-#if ANDROID
-    // For Android, load from assets
-    webView.Source = new UrlWebViewSource
-    {
-        Url = "file:///android_asset/modelviewer.html"
-    };
-#elif IOS
-    // For iOS, load HTML directly from the app bundle
-    var htmlFile = "modelviewer.html";
-    var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
-    var htmlContent = File.ReadAllText(htmlPath);
+            //#if ANDROID
+            //    // For Android, load from assets
+            //    webView.Source = new UrlWebViewSource
+            //    {
+            //        Url = "file:///android_asset/modelviewer.html"
+            //    };
+            //#elif IOS
+            //    // For iOS, load HTML directly from the app bundle
+            //    var htmlFile = "modelviewer.html";
+            //    var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+            //    var htmlContent = File.ReadAllText(htmlPath);
 
-    webView.Source = new HtmlWebViewSource
-    {
-        Html = htmlContent,
-        BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
-    };
-#endif
+            //    webView.Source = new HtmlWebViewSource
+            //    {
+            //        Html = htmlContent,
+            //        BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
+            //    };
+            //#endif
 
 
             DisplayQRCode();
@@ -317,25 +326,63 @@ namespace PUBTransfer
 
 
 
-//#if ANDROID
-//ModelViewer.Source = new UrlWebViewSource
-//{
-//    Url = "file:///android_asset/modelviewer.html"
-//};
-//#elif IOS
-//var htmlFile = "modelviewer.html";
-//var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
-//var htmlContent = File.ReadAllText(htmlPath);
+            //#if ANDROID
+            //ModelViewer.Source = new UrlWebViewSource
+            //{
+            //    Url = "file:///android_asset/modelviewer.html"
+            //};
+            //#elif IOS
+            //var htmlFile = "modelviewer.html";
+            //var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+            //var htmlContent = File.ReadAllText(htmlPath);
 
-//ModelViewer.Source = new HtmlWebViewSource
-//{
-//    Html = htmlContent,
-//    BaseUrl = NSBundle.MainBundle.BundlePath
-//};
-//#endif
+            //ModelViewer.Source = new HtmlWebViewSource
+            //{
+            //    Html = htmlContent,
+            //    BaseUrl = NSBundle.MainBundle.BundlePath
+            //};
+            //#endif
 
-            //ModelViewer.HorizontalOptions = LayoutOptions.FillAndExpand;
-            //ModelViewer.VerticalOptions = LayoutOptions.FillAndExpand;
+            //            ModelViewer.HorizontalOptions = LayoutOptions.FillAndExpand;
+            //            ModelViewer.VerticalOptions = LayoutOptions.FillAndExpand;
+
+
+
+
+
+            //SHOWS MODEL ON ANDROID, KEEP
+#if ANDROID
+    Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+    {
+        if (handler.PlatformView is Android.Webkit.WebView webView)
+        {
+            var settings = webView.Settings;
+            settings.JavaScriptEnabled = true;
+            settings.DomStorageEnabled = true;
+            settings.SetSupportZoom(false);
+
+            // Critical for WebGL:
+            settings.AllowFileAccess = true;
+            settings.AllowContentAccess = true;
+            settings.AllowFileAccessFromFileURLs = true;
+            settings.AllowUniversalAccessFromFileURLs = true;
+
+            // Enable WebGL
+            settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
+            webView.SetLayerType(Android.Views.LayerType.Hardware, null);
+        }
+    });
+#endif
+            ModelViewer.Source = new UrlWebViewSource
+            {
+                Url = "file:///android_asset/modelviewer.html"
+            };
+            ModelViewer.HorizontalOptions = LayoutOptions.FillAndExpand;
+            ModelViewer.VerticalOptions = LayoutOptions.FillAndExpand;
+            //END SHOWS MODEL ON ANDROID, KEEP
+
+
+
             _bluetoothLE = CrossBluetoothLE.Current;
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
@@ -343,42 +390,65 @@ namespace PUBTransfer
         private async void MainPage_Loaded(object sender, EventArgs e)
         {
             await StartLocalServer();
-            webView.Source = "http://localhost:9696/modelviewer.html";
+            //webView.Source = "http://localhost:9696/modelviewer.html";
         }
 
         private async Task StartLocalServer()
         {
-            //Make sure steampunk_vape.glb is actually copied to AppDataDirectory/www by CopyAssetsToLocalFolder().
             string path = await CopyAssetsToLocalFolder();
 
             server = new WebServer(o => o
-                    .WithUrlPrefix("http://localhost:9696")
+                    .WithUrlPrefix("http://127.0.0.1:9696")
                     .WithMode(HttpListenerMode.EmbedIO))
                 .WithLocalSessionManager()
                 .WithStaticFolder("/", path, true);
 
             await server.RunAsync();
         }
+        //private async Task<string> CopyAssetsToLocalFolder()
+        //{
+        //    string destPath = Path.Combine(FileSystem.Current.AppDataDirectory, "www");
+        //    if (!Directory.Exists(destPath))
+        //        Directory.CreateDirectory(destPath);
+
+        //    var assembly = typeof(MainPage).Assembly;
+
+        //    foreach (var file in new[] { "modelviewer.html", "three.min.js", "steampunk_vape.glb" })
+        //    {
+        //        using var stream = assembly.GetManifestResourceStream($"PUBTransfer.Resources.Raw.{file}");
+        //        //this hits, need to embed the files or something
+        //        //In a .NET MAUI project, files in Resources\Raw are usually not automatically embedded — they are copied to the output folder or packaged as content.
+        //        //GetManifestResourceStream only works with embedded resources, not content files.
+        //        if (stream == null) continue;
+
+        //        var filePath = Path.Combine(destPath, file);
+        //        using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+        //        await stream.CopyToAsync(fs);
+        //    }
+
+        //    return destPath;
+        //}
+
         private async Task<string> CopyAssetsToLocalFolder()
         {
             string destPath = Path.Combine(FileSystem.Current.AppDataDirectory, "www");
             if (!Directory.Exists(destPath))
                 Directory.CreateDirectory(destPath);
 
-            var assembly = typeof(MainPage).Assembly;
+            string[] files = { "modelviewer.html", "three.min.js", "steampunk_vape.glb" };
 
-            foreach (var file in new[] { "modelviewer.html", "three.min.js", "steampunk_vape.glb" })
+            foreach (var file in files)
             {
-                using var stream = assembly.GetManifestResourceStream($"PUBTransfer.Resources.Raw.{file}");
-                if (stream == null) continue;
-
-                var filePath = Path.Combine(destPath, file);
-                using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+                using var stream = await FileSystem.OpenAppPackageFileAsync(file);
+                var destFile = Path.Combine(destPath, file);
+                using var fs = new FileStream(destFile, FileMode.Create, FileAccess.Write);
                 await stream.CopyToAsync(fs);
             }
 
+            Console.WriteLine($"[CopyAssets] destPath: {destPath}");
             return destPath;
         }
+
 
 
 

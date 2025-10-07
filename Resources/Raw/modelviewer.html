@@ -78,11 +78,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     </script>
 </body>
 </html>-->
-
-
-
-
-
 <!--triangle-->
 <!--<!DOCTYPE html>
 <html>
@@ -312,6 +307,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             height: 100%;
             overflow: hidden;
         }
+
         canvas {
             display: block;
             width: 100%;
@@ -366,12 +362,27 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
                     console.error("Error loading model:", error);
                 }
             );
+
             //loader.load(
             //    "http://localhost:9696/steampunk_vape.glb",
             //    (gltf) => { scene.add(gltf.scene); },
             //    undefined,
             //    (error) => { console.error("Error loading model:", error); }
             //);
+
+            //loader.load(
+            //    "http://127.0.0.1:9696/steampunk_vape.glb", // must match server URL
+            //    (gltf) => {
+            //        scene.add(gltf.scene);
+            //        console.log("Model loaded!");
+            //    },
+            //    undefined,
+            //    (error) => { console.error("Error loading model:", error); }
+            //);
+
+            //open browser on phone and go to http://127.0.0.1:9696/steampunk_vape.glb
+            //it needs to download the file from here, seems like it does correctly
+
             // Handle resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -411,8 +422,13 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 
 
-
-
+<!--because a WebView cannot load local .glb files via XMLHttpRequest when the HTML is loaded from the file:///android_asset/ scheme. This is a very common issue with WebGL in WebViews.
+Why this happens
+THREE.GLTFLoader uses fetch or XMLHttpRequest internally.
+file:/// URLs are considered cross-origin in a WebView.
+Android’s WebView enforces strict CORS, so it blocks requests for local files.
+That’s why your WebView stays white — the model never loads.
+ENABLE CORS-->
 
 
 
@@ -427,7 +443,6 @@ Keep a reference to the model object in JS (let model;).
 From C#, collect the sensor or simulation data.
 Call EvaluateJavaScriptAsync with the new data.
 The model updates in real-time.-->
-
 <!--<!DOCTYPE html>
 <html>
 <head>
