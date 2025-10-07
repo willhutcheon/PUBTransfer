@@ -353,34 +353,32 @@ namespace PUBTransfer
 
 
             //SHOWS MODEL ON ANDROID, KEEP
-//#if IOS
-//Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
-//{
-//    if (handler.PlatformView is WKWebView webView)
-//    {
-//        webView.Configuration.Preferences.JavaScriptEnabled = true;
-//        webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
-//        // WebGL is enabled by default in WKWebView
-//    }
-//});
+            //#if ANDROID
+            //    Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+            //    {
+            //        if (handler.PlatformView is Android.Webkit.WebView webView)
+            //        {
+            //            var settings = webView.Settings;
+            //            settings.JavaScriptEnabled = true;
+            //            settings.DomStorageEnabled = true;
+            //            settings.SetSupportZoom(false);
 
-//// Load local HTML as embedded string
-//var htmlPath = Path.Combine(FileSystem.AppDataDirectory, "modelviewer.html");
-//var html = File.ReadAllText(htmlPath);
+            //            // Critical for WebGL:
+            //            settings.AllowFileAccess = true;
+            //            settings.AllowContentAccess = true;
+            //            settings.AllowFileAccessFromFileURLs = true;
+            //            settings.AllowUniversalAccessFromFileURLs = true;
 
-//ModelViewer.Source = new HtmlWebViewSource
-//{
-//    Html = html,
-//    BaseUrl = FileSystem.AppDataDirectory // relative paths for assets
-//};
-//#endif
-
-
-
-
-
-
-
+            //            // Enable WebGL
+            //            settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
+            //            webView.SetLayerType(Android.Views.LayerType.Hardware, null);
+            //        }
+            //    });
+            //#endif
+            //            ModelViewer.Source = new UrlWebViewSource
+            //            {
+            //                Url = "file:///android_asset/modelviewer.html"
+            //            };
 
 
 #if ANDROID
@@ -404,11 +402,45 @@ namespace PUBTransfer
             webView.SetLayerType(Android.Views.LayerType.Hardware, null);
         }
     });
+    
+    ModelViewer.Source = new UrlWebViewSource
+    {
+        Url = "file:///android_asset/modelviewer.html"
+    };
+#elif IOS
+    Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+    {
+        if (handler.PlatformView is WKWebView webView)
+        {
+            webView.Configuration.Preferences.JavaScriptEnabled = true;
+            webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
+            // WebGL is enabled by default in WKWebView
+        }
+    });
+
+    // Load from app bundle
+    var htmlFile = "modelviewer.html";
+    var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+    var htmlContent = File.ReadAllText(htmlPath);
+
+    ModelViewer.Source = new HtmlWebViewSource
+    {
+        Html = htmlContent,
+        BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
+    };
 #endif
-            ModelViewer.Source = new UrlWebViewSource
-            {
-                Url = "file:///android_asset/modelviewer.html"
-            };
+
+
+
+
+
+
+
+
+
+
+
+
             ModelViewer.HorizontalOptions = LayoutOptions.FillAndExpand;
             ModelViewer.VerticalOptions = LayoutOptions.FillAndExpand;
             //END SHOWS MODEL ON ANDROID, KEEP
