@@ -1512,15 +1512,25 @@ namespace PUBTransfer
             }
         });
 
-        using var htmlStream = await FileSystem.OpenAppPackageFileAsync("modelviewer.html");
-        using var reader = new StreamReader(htmlStream);
-        var html = reader.ReadToEnd();
+        //using var htmlStream = await FileSystem.OpenAppPackageFileAsync("modelviewer.html");
+        //using var reader = new StreamReader(htmlStream);
+        //var html = reader.ReadToEnd();
 
-        ModelViewer.Source = new HtmlWebViewSource
-        {
-            Html = html,
-            BaseUrl = NSBundle.MainBundle.BundlePath
-        };
+        //ModelViewer.Source = new HtmlWebViewSource
+        //{
+        //    Html = html,
+        //    BaseUrl = NSBundle.MainBundle.BundlePath
+        //};
+        var htmlFile = "modelviewer.html";
+var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+var htmlContent = File.ReadAllText(htmlPath);
+
+ModelViewer.Source = new HtmlWebViewSource
+{
+    Html = htmlContent,
+    BaseUrl = NSBundle.MainBundle.BundlePath
+};
+
 #endif
 
 
