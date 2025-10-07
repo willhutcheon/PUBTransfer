@@ -1,84 +1,4 @@
-﻿<!--<!DOCTYPE html>
-<html>
-<head>
-<script src="three.min.js"></script>
-<script src="GLTFLoader.js"></script>
-<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.149.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-breakpoints dont work here because its a chrome web view
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-</head>
-<body style="margin:0;overflow:hidden;">
-    <script>
-        window.addEventListener('load', function () {
-            if (typeof THREE === 'undefined') {
-                console.error('THREE.js failed to load');
-                return;
-            }
-            console.log('THREE.js loaded, version:', THREE.REVISION);
-            console.log('THREE object keys:', Object.keys(THREE).slice(0, 20));
-            console.log('THREE.GLTFLoader type:', typeof THREE.GLTFLoader);
-            console.log('Checking for GLTFLoader...');
-            // Wait a bit for GLTFLoader to attach
-            setTimeout(function () {
-                console.log('After timeout - THREE.GLTFLoader type:', typeof THREE.GLTFLoader);
-                if (typeof THREE.GLTFLoader === 'undefined') {
-                    console.error('GLTFLoader still not available after timeout');
-                    console.log('Available THREE properties:', Object.keys(THREE));
-                    return;
-                }
-                console.log('GLTFLoader is available, creating scene...');
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                document.body.appendChild(renderer.domElement);
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-                scene.add(ambientLight);
-                const light = new THREE.DirectionalLight(0xffffff, 1);
-                light.position.set(1, 1, 1);
-                scene.add(light);
-                const loader = new THREE.GLTFLoader();
-                //loader.load("concrete-barrier.glb",
-                //    (gltf) => {
-                //        scene.add(gltf.scene);
-                //        console.log("Model loaded successfully!");
-                //    },
-                //    undefined,
-                //    (err) => {
-                //        console.error("Model load error:", err);
-                //    }
-                //);
-
-                //loader.load("file:///android_res/raw/concrete-barrier.glb", (gltf) => {
-                //    scene.add(gltf.scene);
-                //});
-
-
-                //making scene but its complaining that its being blocked from accessing this
-                //hardcode a triangle instead
-                loader.load("concrete-barrier.glb", (gltf) => {
-                    scene.add(gltf.scene);
-                });
-
-
-
-
-                camera.position.z = 5;
-                function animate() {
-                    requestAnimationFrame(animate);
-                    scene.rotation.y += 0.01;
-                    renderer.render(scene, camera);
-                }
-                animate();
-            }, 500);
-        });
-    </script>
-</body>
-</html>-->
-<!--triangle-->
+﻿<!--triangle-->
 <!--<!DOCTYPE html>
 <html>
 <head>
@@ -186,112 +106,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     </script>
 </body>
 </html>-->
-<!--<!DOCTYPE html>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
-</head>
-<body>
-    <script>
-        window.addEventListener('load', () => {
-            if (typeof THREE === 'undefined') {
-                alert("THREE.js not loaded!");
-                return;
-            }
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x808080);
-            const camera = new THREE.PerspectiveCamera(
-                75,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                100
-            );
-            camera.position.z = 5;
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(1, 1, 1);
-            scene.add(directionalLight);
-            // GLTFLoader
-            const loader = new THREE.GLTFLoader();
-            // NOTE: On Android, put concrete-barrier.glb in Assets folder
-            //       On iOS, put it in Resources folder and use the correct path
-            loader.load(
-                /*"concrete-barrier.glb",*/
-                "steampunk_vape.glb",
-                (gltf) => {
-                    scene.add(gltf.scene);
-                    console.log("Model loaded successfully!");
-                },
-                undefined,
-                (error) => {
-                    console.error("Error loading model:", error);
-                }
-            );
-            // Handle resize
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-            function animate() {
-                requestAnimationFrame(animate);
-                // Optional rotation
-                if (scene.children.length > 0) {
-                    scene.children.forEach(obj => { obj.rotation.y += 0.01; });
-                }
-                renderer.render(scene, camera);
-            }
-            animate();
-        });
-    </script>
-</body>
-</html>-->
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<!--orbital vape-->
 <!DOCTYPE html>
 <html>
 <head>
@@ -307,7 +123,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             height: 100%;
             overflow: hidden;
         }
-
         canvas {
             display: block;
             width: 100%;
@@ -406,48 +221,14 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 </body>
 </html>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!--because a WebView cannot load local .glb files via XMLHttpRequest when the HTML is loaded from the file:///android_asset/ scheme. This is a very common issue with WebGL in WebViews.
-Why this happens
-THREE.GLTFLoader uses fetch or XMLHttpRequest internally.
-file:/// URLs are considered cross-origin in a WebView.
-Android’s WebView enforces strict CORS, so it blocks requests for local files.
-That’s why your WebView stays white — the model never loads.
-ENABLE CORS-->
-
-
-
-
-
-
-
-
 <!--to get this to get real data from a .cs file:
 Load Three.js + GLTF model in the WebView as you’re already doing.
 Keep a reference to the model object in JS (let model;).
 From C#, collect the sensor or simulation data.
 Call EvaluateJavaScriptAsync with the new data.
 The model updates in real-time.-->
+
+<!--orbital vape that snaps to points-->
 <!--<!DOCTYPE html>
 <html>
 <head>
