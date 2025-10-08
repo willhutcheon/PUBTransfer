@@ -153,10 +153,10 @@ namespace PUBTransfer
         public static BLEDeviceDetails CurrentDevice;
         //should this be private, should it even be in globals
         //VUSE
-        //public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+        public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
         //ALTO
         //subscribe to updates for this characteristic
-        public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
+        //public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
     }
     public enum EnvironmentType
     {
@@ -609,42 +609,42 @@ namespace PUBTransfer
 
 
                     //var altoHeaderChar = await GetHeaderCharacteristicAltoAsync(selectedDevice);
-                    var (notifyChar, writeChar) = await GetHeaderCharacteristicAltoAsync(selectedDevice, "1192");
+                    //var (notifyChar, writeChar) = await GetHeaderCharacteristicAltoAsync(selectedDevice, "1192");
 
-                    if (notifyChar != null && writeChar != null)
-                    {
-                        Console.WriteLine("Header handshake sent, notifications subscribed.");
+                    //if (notifyChar != null && writeChar != null)
+                    //{
+                    //    Console.WriteLine("Header handshake sent, notifications subscribed.");
 
-                        // Later, after receiving the header notification, ACK it:
-                        string ack = $"4,1192,{DateTime.Now:MM/dd/yyyy HH:mm:ss},005";
-                        await writeChar.WriteAsync(Encoding.UTF8.GetBytes(ack));
-                        Console.WriteLine($"[BLE] Sent header ACK: {ack}");
-                    }
-
-
+                    //    // Later, after receiving the header notification, ACK it:
+                    //    string ack = $"4,1192,{DateTime.Now:MM/dd/yyyy HH:mm:ss},005";
+                    //    await writeChar.WriteAsync(Encoding.UTF8.GetBytes(ack));
+                    //    Console.WriteLine($"[BLE] Sent header ACK: {ack}");
+                    //}
 
 
+
+                    var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
                     //await DisplayAlert("Connected", $"Connected to {selectedDevice.Name}...", "OK");
                     // for ALTO you need to subscribe to updates rather than read
                     // all of this is just for VUSE
                     // STEP 1: Read header
 
-                    //var (headerBytes, resultCode) = await headerChar.ReadAsync();
-                    //var header = System.Text.Encoding.UTF8.GetString(headerBytes);
-                    //Console.WriteLine($"[BLE] Header: {header}");
-                    ////await DisplayAlert("Header Data", header, "OK");
-                    //// STEP 2: Ack header
-                    //var parts = header.Split(',');
-                    //string serial = parts.Length > 1 ? parts[1] : "";
-                    //await AcknowledgeHeaderAsync(headerChar, serial);
-                    //// STEP 3: Read data
-                    //int batchSize = int.Parse(parts[3]);
-                    //int puffCount = int.Parse(parts[4]);
-                    //Console.WriteLine($"batchSize {batchSize}");
-                    //Console.WriteLine($"puffCount {puffCount}");
-                    //var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
-                    ////STEP 3: Put data into puffdata objects
-                    //ParsePuffData(dataPoints);
+                    var (headerBytes, resultCode) = await headerChar.ReadAsync();
+                    var header = System.Text.Encoding.UTF8.GetString(headerBytes);
+                    Console.WriteLine($"[BLE] Header: {header}");
+                    //await DisplayAlert("Header Data", header, "OK");
+                    // STEP 2: Ack header
+                    var parts = header.Split(',');
+                    string serial = parts.Length > 1 ? parts[1] : "";
+                    await AcknowledgeHeaderAsync(headerChar, serial);
+                    // STEP 3: Read data
+                    int batchSize = int.Parse(parts[3]);
+                    int puffCount = int.Parse(parts[4]);
+                    Console.WriteLine($"batchSize {batchSize}");
+                    Console.WriteLine($"puffCount {puffCount}");
+                    var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
+                    //STEP 3: Put data into puffdata objects
+                    ParsePuffData(dataPoints);
 
                     //STEP 4: Confirm upload
                     //if (dataPoints.Count > 0)

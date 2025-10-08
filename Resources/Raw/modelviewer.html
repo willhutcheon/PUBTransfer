@@ -460,6 +460,7 @@ The model updates in real-time.-->
             //    }
             //);
 
+            //this is where were loading from now, does not show Model loaded from Base64! on iphone
             window.loadGLBFromBase64 = function (base64GLB) {
                 const arrayBuffer = Uint8Array.from(atob(base64GLB), c => c.charCodeAt(0)).buffer;
                 const loader = new THREE.GLTFLoader();
