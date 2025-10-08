@@ -1,5 +1,5 @@
 ﻿<!--triangle-->
-<!DOCTYPE html>
+<!--<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -105,7 +105,7 @@
         });
     </script>
 </body>
-</html>
+</html>-->
 <!--orbital vape-->
 <!--<!DOCTYPE html>
 <html>
@@ -327,12 +327,6 @@ The model updates in real-time.-->
     </script>
 </body>
 </html>-->
-
-
-
-
-
-
 <!--test for iphone model debugging-->
 <!--<!DOCTYPE html>
 <html>
@@ -482,3 +476,99 @@ The model updates in real-time.-->
     </script>
 </body>
 </html>-->
+<!--rudementary vape-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        window.addEventListener('load', () => {
+            if (typeof THREE === 'undefined') {
+                alert("THREE.js not loaded!");
+                return;
+            }
+
+            // Scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x808080);
+
+            // Camera
+            const camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                100
+            );
+            camera.position.set(0, 2, 5);
+
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+
+            // Orbit controls (mouse/touch drag to rotate)
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = true;
+            controls.enablePan = false;
+
+            // ---- Vape Shape ----
+            // Body
+            const bodyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2, 32);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x5555ff, shininess: 100 });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            scene.add(body);
+
+            // Mouthpiece
+            const mouthGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.4, 32);
+            const mouthMaterial = new THREE.MeshPhongMaterial({ color: 0x222222, shininess: 80 });
+            const mouthpiece = new THREE.Mesh(mouthGeometry, mouthMaterial);
+            mouthpiece.position.y = 1.2; // move to top
+            scene.add(mouthpiece);
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Animate
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update(); // needed for damping
+                renderer.render(scene, camera);
+            }
+            animate();
+        });
+    </script>
+</body>
+</html>
