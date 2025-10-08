@@ -40,6 +40,9 @@ using System.Threading;
 using WebKit;
 #endif
 
+using System.IO;
+using System.Threading.Tasks;
+
 
 //using static Java.Util.Concurrent.Flow;
 
@@ -446,6 +449,15 @@ namespace PUBTransfer
 
 #endif
 
+            ModelViewer.Navigated += async (s, e) =>
+            {
+                string base64GLB = await GetGLBBase64Async(); // your method to read GLB
+                string js = $"window.loadGLBFromBase64('{base64GLB}');";
+                await ModelViewer.EvaluateJavaScriptAsync(js);
+
+                Console.WriteLine("Injected Base64 GLB into WebView");
+            };
+
 
 
             //#elif IOS
@@ -493,6 +505,16 @@ namespace PUBTransfer
             _bluetoothAdapter = CrossBluetoothLE.Current.Adapter;
             DevicesListView.ItemsSource = Devices;
         }
+
+        public async Task<string> GetGLBBase64Async()
+        {
+            using var stream = await FileSystem.OpenAppPackageFileAsync("steampunk_vape.glb");
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            byte[] bytes = ms.ToArray();
+            return Convert.ToBase64String(bytes);
+        }
+
         private async void MainPage_Loaded(object sender, EventArgs e)
         {
             await StartLocalServer();
@@ -1543,36 +1565,36 @@ namespace PUBTransfer
 
 
 
-#if IOS
-        Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
-        {
-            if (handler.PlatformView is WebKit.WKWebView webView)
-            {
-                webView.Configuration.Preferences.JavaScriptEnabled = true;
-                webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
-            }
-        });
+//#if IOS
+//        Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+//        {
+//            if (handler.PlatformView is WebKit.WKWebView webView)
+//            {
+//                webView.Configuration.Preferences.JavaScriptEnabled = true;
+//                webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
+//            }
+//        });
 
-        //using var htmlStream = await FileSystem.OpenAppPackageFileAsync("modelviewer.html");
-        //using var reader = new StreamReader(htmlStream);
-        //var html = reader.ReadToEnd();
+//        //using var htmlStream = await FileSystem.OpenAppPackageFileAsync("modelviewer.html");
+//        //using var reader = new StreamReader(htmlStream);
+//        //var html = reader.ReadToEnd();
 
-        //ModelViewer.Source = new HtmlWebViewSource
-        //{
-        //    Html = html,
-        //    BaseUrl = NSBundle.MainBundle.BundlePath
-        //};
-        var htmlFile = "modelviewer.html";
-var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
-var htmlContent = File.ReadAllText(htmlPath);
+//        //ModelViewer.Source = new HtmlWebViewSource
+//        //{
+//        //    Html = html,
+//        //    BaseUrl = NSBundle.MainBundle.BundlePath
+//        //};
+//        var htmlFile = "modelviewer.html";
+//var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+//var htmlContent = File.ReadAllText(htmlPath);
 
-ModelViewer.Source = new HtmlWebViewSource
-{
-    Html = htmlContent,
-    BaseUrl = NSBundle.MainBundle.BundlePath
-};
+//ModelViewer.Source = new HtmlWebViewSource
+//{
+//    Html = htmlContent,
+//    BaseUrl = NSBundle.MainBundle.BundlePath
+//};
 
-#endif
+//#endif
 
 
 
