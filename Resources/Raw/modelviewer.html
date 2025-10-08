@@ -441,6 +441,12 @@ The model updates in real-time.-->
                 undefined,
                 (error) => {
                     console.error("Error loading model:", error);
+                    if (error && error.message) {
+                        console.error("Error message:", error.message);
+                    }
+                    if (error && error.target && error.target.src) {
+                        console.error("Failed URL:", error.target.src);
+                    }
                 }
             );
 
