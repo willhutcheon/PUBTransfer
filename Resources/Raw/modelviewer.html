@@ -430,6 +430,14 @@ The model updates in real-time.-->
             controls.enableZoom = true;
             controls.enablePan = false;
 
+
+            fetch("steampunk_vape.glb")
+                .then(res => {
+                    if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+                    console.log("Model file fetched OK:", res);
+                })
+                .catch(err => console.error("Fetch failed:", err));
+
             // Load GLTF model
             const loader = new THREE.GLTFLoader();
             loader.load(
