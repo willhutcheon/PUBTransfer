@@ -445,9 +445,9 @@ The model updates in real-time.-->
 
             // Load GLTF model
             const loader = new THREE.GLTFLoader();
-            loader.load("ms-appx:///Resources/Raw/steampunk_vape.glb",
-            //loader.load(
-            //    "steampunk_vape.glb",
+            //loader.load("ms-appx:///Resources/Raw/steampunk_vape.glb",
+            loader.load(
+                "steampunk_vape.glb",
                 (gltf) => {
                     scene.add(gltf.scene);
                     console.log("Model loaded successfully!");
