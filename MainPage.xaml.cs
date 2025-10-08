@@ -414,22 +414,46 @@ namespace PUBTransfer
         {
             webView.Configuration.Preferences.JavaScriptEnabled = true;
             webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
-            // WebGL is enabled by default in WKWebView
         }
     });
 
-    // Load from app bundle
-    //var htmlFile = "modelviewer.html";
-    //var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
-    //var htmlContent = File.ReadAllText(htmlPath);
+    var htmlFile = "modelviewer.html";
+    var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+    var htmlContent = File.ReadAllText(htmlPath);
 
-    //ModelViewer.Source = new HtmlWebViewSource
-    //{
-    //    Html = htmlContent,
-    //    BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
-    //};
-    
+    // IMPORTANT: Set BaseUrl to the bundle path with trailing slash
+    ModelViewer.Source = new HtmlWebViewSource
+    {
+        Html = htmlContent,
+        BaseUrl = $"file://{NSBundle.MainBundle.BundlePath}/"  // Add file:// protocol and trailing slash
+    };
 #endif
+
+
+
+            //#elif IOS
+            //    Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+            //    {
+            //        if (handler.PlatformView is WKWebView webView)
+            //        {
+            //            webView.Configuration.Preferences.JavaScriptEnabled = true;
+            //            webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
+            //            // WebGL is enabled by default in WKWebView
+            //        }
+            //    });
+
+            //    // Load from app bundle
+            //    //var htmlFile = "modelviewer.html";
+            //    //var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+            //    //var htmlContent = File.ReadAllText(htmlPath);
+
+            //    //ModelViewer.Source = new HtmlWebViewSource
+            //    //{
+            //    //    Html = htmlContent,
+            //    //    BaseUrl = NSBundle.MainBundle.BundlePath // resolves relative paths for .glb and JS
+            //    //};
+
+            //#endif
 
 
 
