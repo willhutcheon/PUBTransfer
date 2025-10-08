@@ -419,13 +419,22 @@ namespace PUBTransfer
 
     var htmlFile = "modelviewer.html";
     var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+    
+    // Debug: Check if file exists
+    Console.WriteLine($"[iOS] HTML Path: {htmlPath}");
+    Console.WriteLine($"[iOS] File exists: {File.Exists(htmlPath)}");
+    Console.WriteLine($"[iOS] Bundle path: {NSBundle.MainBundle.BundlePath}");
+    
+    // Check if GLB exists
+    var glbPath = Path.Combine(NSBundle.MainBundle.BundlePath, "steampunk_vape.glb");
+    Console.WriteLine($"[iOS] GLB exists: {File.Exists(glbPath)}");
+    
     var htmlContent = File.ReadAllText(htmlPath);
 
-    // IMPORTANT: Set BaseUrl to the bundle path with trailing slash
     ModelViewer.Source = new HtmlWebViewSource
     {
         Html = htmlContent,
-        BaseUrl = $"file://{NSBundle.MainBundle.BundlePath}/"  // Add file:// protocol and trailing slash
+        BaseUrl = NSBundle.MainBundle.BundlePath + "/" // Ensure trailing slash
     };
 #endif
 
