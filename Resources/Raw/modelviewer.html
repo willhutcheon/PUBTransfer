@@ -438,10 +438,16 @@ The model updates in real-time.-->
                 })
                 .catch(err => console.error("Fetch failed:", err));
 
+            fetch("Resources/Raw/steampunk_vape.glb")
+                .then(res => console.log("Fetched:", res))
+                .catch(err => console.error("Fetch failed:", err));
+
+
             // Load GLTF model
             const loader = new THREE.GLTFLoader();
-            loader.load(
-                "steampunk_vape.glb",
+            loader.load("ms-appx:///Resources/Raw/steampunk_vape.glb",
+            //loader.load(
+            //    "steampunk_vape.glb",
                 (gltf) => {
                     scene.add(gltf.scene);
                     console.log("Model loaded successfully!");

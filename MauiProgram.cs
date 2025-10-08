@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-//using ZXing.Net.Maui.Controls;
 
 namespace PUBTransfer
 {
@@ -10,14 +9,6 @@ namespace PUBTransfer
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
-
-
-
-
-
-
-
-
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

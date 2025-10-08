@@ -431,11 +431,19 @@ namespace PUBTransfer
     
     var htmlContent = File.ReadAllText(htmlPath);
 
-    ModelViewer.Source = new HtmlWebViewSource
-    {
-        Html = htmlContent,
-        BaseUrl = NSBundle.MainBundle.BundlePath + "/" // Ensure trailing slash
-    };
+    //ModelViewer.Source = new HtmlWebViewSource
+    //{
+    //    Html = htmlContent,
+    //    BaseUrl = NSBundle.MainBundle.BundlePath + "/" // Ensure trailing slash
+    //};
+
+    var htmlSource = new HtmlWebViewSource
+{
+    Html = File.ReadAllText("Resources/Raw/index.html"),
+    BaseUrl = FileSystem.AppDataDirectory // or use FileSystem.Current.AppPackageDirectory
+};
+ModelViewer.Source = htmlSource;
+
 #endif
 
 
