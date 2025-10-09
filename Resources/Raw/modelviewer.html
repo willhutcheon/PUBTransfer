@@ -674,6 +674,28 @@ The model updates in real-time.-->
             mouthpiece.position.y = 1.2; // move to top
             scene.add(mouthpiece);
 
+
+
+
+
+            // ---- Button on the Side ----
+            // Small cylinder sticking out of the side
+            const buttonGeometry = new THREE.CylinderGeometry(0.07, 0.07, 0.03, 32);
+            const buttonMaterial = new THREE.MeshPhongMaterial({ color: 0xff3333, shininess: 80 });
+            const button = new THREE.Mesh(buttonGeometry, buttonMaterial);
+
+            // Position the button on the side of the vape
+            button.rotation.z = Math.PI / 2; // lay it sideways
+            button.position.set(0.3, 0.5, 0);  // x = radius offset, y = middle height
+            scene.add(button);
+
+
+
+
+
+
+
+
             // Handle resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
