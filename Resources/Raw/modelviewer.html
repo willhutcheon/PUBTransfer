@@ -548,7 +548,7 @@ The model updates in real-time.-->
                     console.log("Model loaded successfully via HTTP!");
                 },
                 (xhr) => console.log(`Loading: ${(xhr.loaded / xhr.total * 100).toFixed(1)}%`),
-                (error) => console.error("Error loading model:", error)
+                (error) => console.error("Error loading model:", error.message)
             );
 
             window.addEventListener('resize', () => {
