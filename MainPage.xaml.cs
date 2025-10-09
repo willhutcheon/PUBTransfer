@@ -527,13 +527,22 @@ namespace PUBTransfer
         {
             string path = await CopyAssetsToLocalFolder();
 
+            //server = new WebServer(o => o
+            //        .WithUrlPrefix("http://127.0.0.1:9696")
+            //        .WithMode(HttpListenerMode.EmbedIO))
+            //    .WithLocalSessionManager()
+            //    .WithStaticFolder("/", path, true);
+
+            //await server.RunAsync();
+
             server = new WebServer(o => o
-                    .WithUrlPrefix("http://127.0.0.1:9696")
+                    .WithUrlPrefix("http://localhost:9696")
                     .WithMode(HttpListenerMode.EmbedIO))
                 .WithLocalSessionManager()
                 .WithStaticFolder("/", path, true);
 
             await server.RunAsync();
+
         }
         //private async Task<string> CopyAssetsToLocalFolder()
         //{
@@ -1571,10 +1580,12 @@ namespace PUBTransfer
             await StartLocalServer();
 
             // Load page from local HTTP server
-            ModelViewer.Source = new UrlWebViewSource
-            {
-                Url = "http://127.0.0.1:9696/modelviewer.html"
-            };
+            //ModelViewer.Source = new UrlWebViewSource
+            //{
+            //    Url = "http://127.0.0.1:9696/modelviewer.html"
+            //};
+            ModelViewer.Source = "http://localhost:9696/modelviewer.html";
+
 
 
             //#if IOS
