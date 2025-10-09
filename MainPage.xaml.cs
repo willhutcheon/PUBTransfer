@@ -451,14 +451,106 @@ namespace PUBTransfer
 
 #endif
 
+            //ModelViewer.Navigated += async (s, e) =>
+            //{
+            //    string base64GLB = await GetGLBBase64Async(); // your method to read GLB
+            //    string js = $"window.loadGLBFromBase64('{base64GLB}');";
+            //    await ModelViewer.EvaluateJavaScriptAsync(js);
+
+            //    Console.WriteLine("Injected Base64 GLB into WebView");
+            //};
             ModelViewer.Navigated += async (s, e) =>
             {
-                string base64GLB = await GetGLBBase64Async(); // your method to read GLB
-                string js = $"window.loadGLBFromBase64('{base64GLB}');";
-                await ModelViewer.EvaluateJavaScriptAsync(js);
+                try
+                {
+                    // Wait for JS to be ready
+                    for (int i = 0; i < 50; i++)
+                    {
+                        var result = await ModelViewer.EvaluateJavaScriptAsync(
+                            "typeof window.loadGLBFromBase64 !== 'undefined'"
+                        );
 
-                Console.WriteLine("Injected Base64 GLB into WebView");
+                        if (result == "true")
+                        {
+                            string base64GLB = await GetGLBBase64Async();
+
+                            // Split into safe chunks for iOS (max ~10KB per call)
+                            int chunkSize = 10000;
+                            await ModelViewer.EvaluateJavaScriptAsync("window.glbChunks = [];");
+
+                            for (int j = 0; j < base64GLB.Length; j += chunkSize)
+                            {
+                                string chunk = base64GLB.Substring(j,
+                                    Math.Min(chunkSize, base64GLB.Length - j));
+                                await ModelViewer.EvaluateJavaScriptAsync(
+                                    $"window.glbChunks.push('{chunk}');"
+                                );
+                            }
+
+                            await ModelViewer.EvaluateJavaScriptAsync(
+                                "window.loadGLBFromBase64(window.glbChunks.join(''));"
+                            );
+
+                            Console.WriteLine("Base64 GLB injected successfully!");
+                            return;
+                        }
+
+                        await Task.Delay(100);
+                    }
+
+                    Console.WriteLine("Timeout waiting for JS function");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
             };
+            //ModelViewer.Navigated += async (s, e) =>
+            //{
+            //    try
+            //    {
+            //        // Read .glb file from app bundle
+            //        using var stream = await FileSystem.OpenAppPackageFileAsync("steampunk_vape.glb");
+            //        using var ms = new MemoryStream();
+            //        await stream.CopyToAsync(ms);
+            //        string base64 = Convert.ToBase64String(ms.ToArray());
+
+            //        // Wait until the JS function exists
+            //        for (int i = 0; i < 30; i++) // up to 3 seconds
+            //        {
+            //            var exists = await ModelViewer.EvaluateJavaScriptAsync("typeof window.loadGLBFromBase64 !== 'undefined'");
+            //            if (exists == "true")
+            //            {
+            //                Console.WriteLine("[DOTNET] JS function found, injecting...");
+
+            //                // Split large base64 into safe chunks for iOS
+            //                int chunkSize = 10000;
+            //                for (int j = 0; j < base64.Length; j += chunkSize)
+            //                {
+            //                    string chunk = base64.Substring(j, Math.Min(chunkSize, base64.Length - j));
+            //                    string jsChunk = $"if(!window.glbData) window.glbData=''; window.glbData += '{chunk}';";
+            //                    await ModelViewer.EvaluateJavaScriptAsync(jsChunk);
+            //                }
+
+            //                // Now parse in JS
+            //                await ModelViewer.EvaluateJavaScriptAsync("window.loadGLBFromBase64(window.glbData); window.glbData='';");
+            //                await ModelViewer.EvaluateJavaScriptAsync("alert('Base64 model injected successfully!');");
+            //                Console.WriteLine("[DOTNET] Base64 GLB injected successfully!");
+            //                return;
+            //            }
+
+            //            await Task.Delay(100);
+            //        }
+
+            //        Console.WriteLine("[DOTNET] JS function never found after waiting.");
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Console.WriteLine($"[DOTNET] Error injecting Base64 model: {ex.Message}");
+            //    }
+            //};
+
+
 
 
 
