@@ -542,14 +542,43 @@ The model updates in real-time.-->
 
 
             const loader = new THREE.GLTFLoader();
-            loader.load("steampunk_vape.glb",
+            //loader.load("steampunk_vape.glb",
+            //    (gltf) => {
+            //        scene.add(gltf.scene);
+            //        console.log("Model loaded successfully via HTTP!");
+            //    },
+            //    (xhr) => console.log(`Loading: ${(xhr.loaded / xhr.total * 100).toFixed(1)}%`),
+            //    (error) => console.error("Error loading model:", error)
+            //);
+            loader.load(
+                "steampunk_vape.glb",
                 (gltf) => {
                     scene.add(gltf.scene);
                     console.log("Model loaded successfully via HTTP!");
                 },
-                (xhr) => console.log(`Loading: ${(xhr.loaded / xhr.total * 100).toFixed(1)}%`),
-                (error) => console.error("Error loading model:", error.message)
+                (xhr) => {
+                    if (xhr.total) {
+                        console.log(`Loading: ${(xhr.loaded / xhr.total * 100).toFixed(1)}%`);
+                    } else {
+                        console.log(`Loading: ${xhr.loaded} bytes loaded`);
+                    }
+                },
+                (error) => {
+                    console.error("Error loading model:", error);
+
+                    // Try to show more info if available
+                    if (error instanceof Error) {
+                        console.error("Error message:", error.message);
+                        console.error("Stack trace:", error.stack);
+                    } else if (error.target) {
+                        console.error("Failed URL:", error.target.src);
+                    } else {
+                        // Fallback: stringify the object to see all properties
+                        console.error("Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+                    }
+                }
             );
+
 
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
