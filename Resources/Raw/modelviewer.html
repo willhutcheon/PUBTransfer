@@ -490,6 +490,30 @@ The model updates in real-time.-->
     </script>-->
 
     <script>
+
+
+        (function () {
+            const logDiv = document.getElementById("log");
+            function addLog(type, args) {
+                const msg = Array.from(args).map(a =>
+                    (typeof a === "object" ? JSON.stringify(a) : a)
+                ).join(" ");
+                const line = document.createElement("div");
+                line.textContent = `[${type}] ${msg}`;
+                logDiv.appendChild(line);
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+            const origLog = console.log;
+            const origErr = console.error;
+            const origWarn = console.warn;
+
+            console.log = function () { addLog("log", arguments); origLog.apply(console, arguments); };
+            console.error = function () { addLog("error", arguments); origErr.apply(console, arguments); };
+            console.warn = function () { addLog("warn", arguments); origWarn.apply(console, arguments); };
+        })();
+
+
+
         window.addEventListener('load', () => {
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x808080);
@@ -511,6 +535,11 @@ The model updates in real-time.-->
             controls.enableDamping = true;
 
             console.log("Loading model via HTTP...");
+
+            fetch("http://localhost:9696/steampunk_vape.glb")
+                .then(r => console.log("Fetch OK", r))
+                .catch(e => console.error("Fetch fail", e));
+
 
             const loader = new THREE.GLTFLoader();
             loader.load("steampunk_vape.glb",
