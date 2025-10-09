@@ -1568,37 +1568,45 @@ namespace PUBTransfer
             base.OnAppearing();
 
 
+            await StartLocalServer();
 
-//#if IOS
-//        Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
-//        {
-//            if (handler.PlatformView is WebKit.WKWebView webView)
-//            {
-//                webView.Configuration.Preferences.JavaScriptEnabled = true;
-//                webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
-//            }
-//        });
+            // Load page from local HTTP server
+            ModelViewer.Source = new UrlWebViewSource
+            {
+                Url = "http://127.0.0.1:9696/modelviewer.html"
+            };
 
-//        //using var htmlStream = await FileSystem.OpenAppPackageFileAsync("modelviewer.html");
-//        //using var reader = new StreamReader(htmlStream);
-//        //var html = reader.ReadToEnd();
 
-//        //ModelViewer.Source = new HtmlWebViewSource
-//        //{
-//        //    Html = html,
-//        //    BaseUrl = NSBundle.MainBundle.BundlePath
-//        //};
-//        var htmlFile = "modelviewer.html";
-//var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
-//var htmlContent = File.ReadAllText(htmlPath);
+            //#if IOS
+            //        Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping("WebGLSettings", (handler, view) =>
+            //        {
+            //            if (handler.PlatformView is WebKit.WKWebView webView)
+            //            {
+            //                webView.Configuration.Preferences.JavaScriptEnabled = true;
+            //                webView.Configuration.Preferences.JavaScriptCanOpenWindowsAutomatically = true;
+            //            }
+            //        });
 
-//ModelViewer.Source = new HtmlWebViewSource
-//{
-//    Html = htmlContent,
-//    BaseUrl = NSBundle.MainBundle.BundlePath
-//};
+            //        //using var htmlStream = await FileSystem.OpenAppPackageFileAsync("modelviewer.html");
+            //        //using var reader = new StreamReader(htmlStream);
+            //        //var html = reader.ReadToEnd();
 
-//#endif
+            //        //ModelViewer.Source = new HtmlWebViewSource
+            //        //{
+            //        //    Html = html,
+            //        //    BaseUrl = NSBundle.MainBundle.BundlePath
+            //        //};
+            //        var htmlFile = "modelviewer.html";
+            //var htmlPath = Path.Combine(NSBundle.MainBundle.BundlePath, htmlFile);
+            //var htmlContent = File.ReadAllText(htmlPath);
+
+            //ModelViewer.Source = new HtmlWebViewSource
+            //{
+            //    Html = htmlContent,
+            //    BaseUrl = NSBundle.MainBundle.BundlePath
+            //};
+
+            //#endif
 
 
 

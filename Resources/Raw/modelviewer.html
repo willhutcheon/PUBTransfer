@@ -369,7 +369,7 @@ The model updates in real-time.-->
 </head>
 <body>
     <div id="log"></div>
-    <script>
+    <!--<script>
         // Hook console.log/error/warn into on-screen logger
         (function () {
             const logDiv = document.getElementById("log");
@@ -480,6 +480,54 @@ The model updates in real-time.-->
             });
 
             // Animate
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+        });
+    </script>-->
+
+    <script>
+        window.addEventListener('load', () => {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x808080);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.z = 5;
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            console.log("Loading model via HTTP...");
+
+            const loader = new THREE.GLTFLoader();
+            loader.load("steampunk_vape.glb",
+                (gltf) => {
+                    scene.add(gltf.scene);
+                    console.log("Model loaded successfully via HTTP!");
+                },
+                (xhr) => console.log(`Loading: ${(xhr.loaded / xhr.total * 100).toFixed(1)}%`),
+                (error) => console.error("Error loading model:", error)
+            );
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
