@@ -128,7 +128,8 @@ namespace PUBTransfer
         public double indexPlaceholderIndex3 { get; set; }
         public double indexPlaceholderIndex4 { get; set; }
         public double VAve { get; set; }
-        public double VHigh { get; set; }
+        //public double VHigh { get; set; }
+        public double VBatt { get; set; }
         public double Current7 { get; set; }
         public double Current8 { get; set; }
         public double Duration { get; set; }
@@ -141,7 +142,8 @@ namespace PUBTransfer
                    $"Index3={indexPlaceholderIndex3:F2} | " +
                    $"Index4={indexPlaceholderIndex4:F2} | " +
                    $"VAve={VAve:F4} | " +
-                   $"VHigh={VHigh:F4} | " +
+                   //$"VHigh={VHigh:F4} | " +
+                   $"VBatt={VBatt:F4} | " +
                    $"Current7={Current7:F4} | " +
                    $"Current8={Current8:F4} | " +
                    $"Duration={Duration:F4} | " +
@@ -1436,7 +1438,8 @@ namespace PUBTransfer
                         indexPlaceholderIndex3 = double.TryParse(parts[3], out var indph3) ? indph3 : 0,
                         indexPlaceholderIndex4 = double.TryParse(parts[4], out var indph4) ? indph4 : 0,
                         VAve = double.TryParse(parts[5], out var VAve) ? VAve : 0,
-                        VHigh = double.TryParse(parts[6], out var VHigh) ? VHigh : 0,
+                        //VHigh = double.TryParse(parts[6], out var VHigh) ? VHigh : 0,
+                        VBatt = double.TryParse(parts[6], out var VBatt) ? VBatt : 0,
                         Current7 = double.TryParse(parts[7], out var Current7) ? Current7 : 0,
                         Current8 = double.TryParse(parts[8], out var Current8) ? Current8 : 0,
                         Duration = double.TryParse(parts[9], out var Duration) ? Duration : 0,
@@ -1460,7 +1463,8 @@ namespace PUBTransfer
             {
                 string line = $"{puff.PuffId}, {puff.Start:yyyy-MM-dd HH:mm:ss}, " +
                               $"{puff.indexPlaceholderIndex2}, {puff.indexPlaceholderIndex3}, {puff.indexPlaceholderIndex4}, " +
-                              $"{puff.VAve}, {puff.VHigh}, {puff.Current7}, {puff.Current8}, " +
+                              //$"{puff.VAve}, {puff.VHigh}, {puff.Current7}, {puff.Current8}, " +
+                              $"{puff.VAve}, {puff.VBatt}, {puff.Current7}, {puff.Current8}, " +
                               $"{puff.Duration}, {puff.End:yyyy-MM-dd HH:mm:ss}";
                 rawData.Add(line);
             }
