@@ -867,29 +867,48 @@ namespace PUBTransfer
 
                 Console.WriteLine("[BLE] ValueUpdated handler attached");
 
+
+
+                //await cccdDescriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+                //await Task.Delay(500);
+                //await Task.Delay(500);
+                //await Task.Delay(500);
+                //await Task.Delay(500);
+                //await Task.Delay(500);
+                await pubChar.StartUpdatesAsync();
+
+
+                await Task.Delay(500);
+                await cccdDescriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+
+                //await cccdDescriptor.StartUpdatesAsync();
+
+
+
                 // STEP 1: Write EMPTY byte array to CCCD descriptor (2902) - This is the "trigger"
                 // This matches what you do in nRF Connect FIRST
-                await cccdDescriptor.WriteAsync(new byte[0]);
-                Console.WriteLine("[BLE] Wrote empty byte array to CCCD descriptor (2902) - TRIGGER SENT");
+                // i didnt even have to do this in nrf i just subscribed ro updates on abba1 and it dumped the data
+                //await cccdDescriptor.WriteAsync(new byte[0]);
+                //Console.WriteLine("[BLE] Wrote empty byte array to CCCD descriptor (2902) - TRIGGER SENT");
 
-                await Task.Delay(300); // Give device time to process the trigger
+                //await Task.Delay(300); // Give device time to process the trigger
 
                 // STEP 2: Enable notifications by writing 0x01, 0x00 to CCCD
                 // This matches pressing the down arrow in nRF Connect
                 //await cccdDescriptor.WriteAsync(new byte[] { 0x01, 0x00 });
                 //Console.WriteLine("[BLE] Wrote 0x01, 0x00 to CCCD descriptor - NOTIFICATIONS ENABLED");
 
-                await Task.Delay(200); // Give it time to register
+                //await Task.Delay(200); // Give it time to register
 
                 // STEP 3: Start updates at the library level
                 //await pubChar.StartUpdatesAsync();
                 //Console.WriteLine("[BLE] StartUpdatesAsync called - Now listening for notifications");
-                await pubChar.WriteAsync(new byte[] { 0x01, 0x00 });
-                Console.WriteLine("[BLE] Wrote 0x01, 0x00 to CCCD descriptor - NOTIFICATIONS ENABLED");
+                //await pubChar.WriteAsync(new byte[] { 0x01, 0x00 });
+                //Console.WriteLine("[BLE] Wrote 0x01, 0x00 to CCCD descriptor - NOTIFICATIONS ENABLED");
 
-                Console.WriteLine("[BLE] ========================================");
-                Console.WriteLine("[BLE] Subscription complete. Waiting for data...");
-                Console.WriteLine("[BLE] ========================================");
+                //Console.WriteLine("[BLE] ========================================");
+                //Console.WriteLine("[BLE] Subscription complete. Waiting for data...");
+                //Console.WriteLine("[BLE] ========================================");
 
                 // Keep device reference alive
                 GC.KeepAlive(device);

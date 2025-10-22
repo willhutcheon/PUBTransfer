@@ -148,7 +148,8 @@
             );
             camera.position.z = 5;
             // Renderer
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            //const renderer = new THREE.WebGLRenderer({ antialias: true });
+            const renderer = new THREE.WebGL1Renderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
             // Lights
@@ -167,9 +168,9 @@
             const loader = new THREE.GLTFLoader();
             //SHOWS MODEL ON ANDROID, KEEP
             loader.load(
-                "plam_tree_planter.glb",
+                //"plam_tree_planter.glb",
                 //"palm_tree_planter.glb",
-                //"steampunk_vape.glb",
+                "steampunk_vape.glb",
                 (gltf) => {
                     scene.add(gltf.scene);
                     console.log("Model loaded successfully!");
@@ -180,6 +181,9 @@
                 }
             );
             //END SHOWS MODEL ON ANDROID, KEEP
+
+
+            // idea: load/look into/look at a .glb model that is hosted on some website in your webview to see if you can see it
 
 
 
