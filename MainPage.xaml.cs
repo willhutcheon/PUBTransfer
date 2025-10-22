@@ -155,10 +155,10 @@ namespace PUBTransfer
         public static BLEDeviceDetails CurrentDevice;
         //should this be private, should it even be in globals
         //VUSE
-        public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+        //public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
         //ALTO
         //subscribe to updates for this characteristic
-        //public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
+        public static readonly Guid HeaderCharacteristicId = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
     }
     public enum EnvironmentType
     {
@@ -687,6 +687,14 @@ namespace PUBTransfer
                     //    Console.WriteLine($"[BLE] Sent header ACK: {ack}");
                     //}
 
+                    Console.WriteLine($"Selected device {selectedDevice}");
+                    await SubscribeToPubNotificationsAsync(selectedDevice);
+                    //var pubChar = await SubscribeToPubNotificationsAsync(selectedDevice);
+                    //if (pubChar != null)
+                    //{
+                    //    Console.WriteLine("Successfully subscribed to PUB notifications. Waiting for data...");
+                    //    await ListAllCharacteristicsStatusAsync(selectedDevice);
+                    //}
 
 
 
@@ -695,23 +703,23 @@ namespace PUBTransfer
                     // all of this is just for VUSE
                     // STEP 1: Read header
 
-                    var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
-                    var (headerBytes, resultCode) = await headerChar.ReadAsync();
-                    var header = System.Text.Encoding.UTF8.GetString(headerBytes);
-                    Console.WriteLine($"[BLE] Header: {header}");
-                    //await DisplayAlert("Header Data", header, "OK");
-                    // STEP 2: Ack header
-                    var parts = header.Split(',');
-                    string serial = parts.Length > 1 ? parts[1] : "";
-                    await AcknowledgeHeaderAsync(headerChar, serial);
-                    // STEP 3: Read data
-                    int batchSize = int.Parse(parts[3]);
-                    int puffCount = int.Parse(parts[4]);
-                    Console.WriteLine($"batchSize {batchSize}");
-                    Console.WriteLine($"puffCount {puffCount}");
-                    var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
-                    //STEP 3: Put data into puffdata objects
-                    ParsePuffData(dataPoints);
+                    //var headerChar = await GetHeaderCharacteristicAsync(selectedDevice);
+                    //var (headerBytes, resultCode) = await headerChar.ReadAsync();
+                    //var header = System.Text.Encoding.UTF8.GetString(headerBytes);
+                    //Console.WriteLine($"[BLE] Header: {header}");
+                    ////await DisplayAlert("Header Data", header, "OK");
+                    //// STEP 2: Ack header
+                    //var parts = header.Split(',');
+                    //string serial = parts.Length > 1 ? parts[1] : "";
+                    //await AcknowledgeHeaderAsync(headerChar, serial);
+                    //// STEP 3: Read data
+                    //int batchSize = int.Parse(parts[3]);
+                    //int puffCount = int.Parse(parts[4]);
+                    //Console.WriteLine($"batchSize {batchSize}");
+                    //Console.WriteLine($"puffCount {puffCount}");
+                    //var dataPoints = await ReadDataBatchAsync(headerChar, batchSize, puffCount, serial, this);
+                    ////STEP 3: Put data into puffdata objects
+                    //ParsePuffData(dataPoints);
 
                     //STEP 4: Confirm upload
                     //if (dataPoints.Count > 0)
@@ -753,6 +761,472 @@ namespace PUBTransfer
                 }
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private async Task ListAllCharacteristicsStatusAsync(IDevice device)
+        {
+            try
+            {
+                var services = await device.GetServicesAsync();
+                foreach (var service in services)
+                {
+                    Console.WriteLine($"[BLE] Service: {service.Id}");
+                    var characteristics = await service.GetCharacteristicsAsync();
+                    foreach (var c in characteristics)
+                    {
+                        Console.WriteLine(
+                            $"[BLE] Characteristic: {c.Id} | Read={c.CanRead} Write={c.CanWrite} Update={c.CanUpdate}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BLE] Error listing characteristics: {ex.Message}");
+            }
+        }
+
+        private static readonly Guid PUB_SERVICE_UUID = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+        private static readonly Guid PUB_CHARACTERISTIC_UUID = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
+        private static readonly Guid CCCD_DESCRIPTOR_UUID = Guid.Parse("00002902-0000-1000-8000-00805f9b34fb");
+        //private static readonly Guid CCCD_DESCRIPTOR_UUID = Guid.Parse("2902");
+
+        private async Task<ICharacteristic?> SubscribeToPubNotificationsAsync(IDevice device)
+        {
+            try
+            {
+                Console.WriteLine("[BLE] Starting subscription process...");
+
+                // Get the PUB service
+                var services = await device.GetServicesAsync();
+                var pubService = services.FirstOrDefault(s => s.Id == PUB_SERVICE_UUID);
+                if (pubService == null)
+                {
+                    Console.WriteLine("[BLE] PUB primary service not found!");
+                    return null;
+                }
+
+                // Get the PUB characteristic
+                var characteristics = await pubService.GetCharacteristicsAsync();
+                var pubChar = characteristics.FirstOrDefault(c => c.Id == PUB_CHARACTERISTIC_UUID);
+                if (pubChar == null)
+                {
+                    Console.WriteLine("[BLE] PUB characteristic not found!");
+                    return null;
+                }
+
+                Console.WriteLine($"[BLE] Found characteristic: {pubChar.Id}");
+                Console.WriteLine($"[BLE] CanRead: {pubChar.CanRead}, CanWrite: {pubChar.CanWrite}, CanUpdate: {pubChar.CanUpdate}");
+
+                // Get the CCCD descriptor (2902)
+                var descriptors = await pubChar.GetDescriptorsAsync();
+                var cccdDescriptor = descriptors.FirstOrDefault(d => d.Id == CCCD_DESCRIPTOR_UUID);
+
+                if (cccdDescriptor == null)
+                {
+                    Console.WriteLine("[BLE] CCCD descriptor (2902) not found!");
+                    return null;
+                }
+
+                Console.WriteLine("[BLE] Found CCCD descriptor (2902)");
+                Console.WriteLine($"[BLE] Found CCCD descriptor {cccdDescriptor.Id}");
+
+                // CRITICAL: Attach the notification handler FIRST
+                pubChar.ValueUpdated += (s, e) =>
+                {
+                    var data = e.Characteristic.Value;
+                    if (data != null && data.Length > 0)
+                    {
+                        string msg = Encoding.UTF8.GetString(data);
+                        Console.WriteLine($"[BLE] ===== NOTIFICATION RECEIVED =====");
+                        Console.WriteLine($"[BLE] Data: {msg}");
+                        Console.WriteLine($"[BLE] Length: {data.Length} bytes");
+                        Console.WriteLine($"[BLE] Hex: {BitConverter.ToString(data)}");
+                        Console.WriteLine($"[BLE] ==================================");
+
+                        // Parse and handle your data here
+                        MainThread.BeginInvokeOnMainThread(() => HandleNotificationData(msg));
+                    }
+                    else
+                    {
+                        Console.WriteLine("[BLE] Empty notification received");
+                    }
+                };
+
+                Console.WriteLine("[BLE] ValueUpdated handler attached");
+
+                // STEP 1: Write EMPTY byte array to CCCD descriptor (2902) - This is the "trigger"
+                // This matches what you do in nRF Connect FIRST
+                await cccdDescriptor.WriteAsync(new byte[0]);
+                Console.WriteLine("[BLE] Wrote empty byte array to CCCD descriptor (2902) - TRIGGER SENT");
+
+                await Task.Delay(300); // Give device time to process the trigger
+
+                // STEP 2: Enable notifications by writing 0x01, 0x00 to CCCD
+                // This matches pressing the down arrow in nRF Connect
+                //await cccdDescriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+                //Console.WriteLine("[BLE] Wrote 0x01, 0x00 to CCCD descriptor - NOTIFICATIONS ENABLED");
+
+                await Task.Delay(200); // Give it time to register
+
+                // STEP 3: Start updates at the library level
+                //await pubChar.StartUpdatesAsync();
+                //Console.WriteLine("[BLE] StartUpdatesAsync called - Now listening for notifications");
+                await pubChar.WriteAsync(new byte[] { 0x01, 0x00 });
+                Console.WriteLine("[BLE] Wrote 0x01, 0x00 to CCCD descriptor - NOTIFICATIONS ENABLED");
+
+                Console.WriteLine("[BLE] ========================================");
+                Console.WriteLine("[BLE] Subscription complete. Waiting for data...");
+                Console.WriteLine("[BLE] ========================================");
+
+                // Keep device reference alive
+                GC.KeepAlive(device);
+
+                return pubChar;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BLE] !!!!! ERROR in SubscribeToPubNotificationsAsync !!!!!");
+                Console.WriteLine($"[BLE] Message: {ex.Message}");
+                Console.WriteLine($"[BLE] Stack trace: {ex.StackTrace}");
+                return null;
+            }
+        }
+
+        // Add this helper method to handle incoming data
+        private void HandleNotificationData(string data)
+        {
+            try
+            {
+                Console.WriteLine($"[BLE] HandleNotificationData called with: {data}");
+
+                // Check if it's a header
+                if (data.StartsWith("PUB"))
+                {
+                    Console.WriteLine("[BLE] >>> HEADER PACKET DETECTED <<<");
+                    var parts = data.Split(',');
+                    if (parts.Length >= 5)
+                    {
+                        string serial = parts[1];
+                        int puffCount = int.Parse(parts[4]);
+                        Console.WriteLine($"[BLE] Serial: {serial}, Puff Count: {puffCount}");
+
+                        // Send ACK
+                        //_ = SendHeaderAckAsync(serial);
+                    }
+                }
+                // Check if it's data
+                else if (data.StartsWith("DATA"))
+                {
+                    Console.WriteLine("[BLE] >>> DATA PACKET DETECTED <<<");
+                    //ParseAndStorePuffData(data);
+                }
+                else
+                {
+                    Console.WriteLine($"[BLE] >>> UNKNOWN PACKET TYPE <<<");
+                    Console.WriteLine($"[BLE] Raw data: {data}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BLE] Error in HandleNotificationData: {ex.Message}");
+            }
+        }
+
+        //private static readonly Guid PUB_SERVICE_UUID = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+        //private static readonly Guid PUB_CHARACTERISTIC_UUID = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
+        //private static readonly Guid CCCD_DESCRIPTOR_UUID = Guid.Parse("00002902-0000-1000-8000-00805f9b34fb");
+        //                                                              //00002902-0000-1000-8000-00805f9b34fb
+
+        //private async Task<ICharacteristic?> SubscribeToPubNotificationsAsync(IDevice device)
+        //{
+        //    try
+        //    {
+
+
+
+
+        //        // Get the PUB service
+        //        var services = await device.GetServicesAsync();
+        //        var pubService = services.FirstOrDefault(s => s.Id == PUB_SERVICE_UUID);
+        //        if (pubService == null)
+        //        {
+        //            Console.WriteLine("[BLE] PUB primary service not found!");
+        //            return null;
+        //        }
+
+        //        // Get the PUB characteristic
+        //        var characteristics = await pubService.GetCharacteristicsAsync();
+        //        var pubChar = characteristics.FirstOrDefault(c => c.Id == PUB_CHARACTERISTIC_UUID);
+        //        if (pubChar == null)
+        //        {
+        //            Console.WriteLine("[BLE] PUB characteristic not found!");
+        //            return null;
+        //        }
+        //        foreach (var desc in await pubChar.GetDescriptorsAsync())
+        //        {
+        //            Console.WriteLine($"Descriptor found: {desc.Id}");
+        //        }
+
+        //        Console.WriteLine($"[BLE] PUB characteristic found: {pubChar.Id}");
+
+        //        // Enable notifications by writing the CCCD descriptor
+        //        var descriptor = (await pubChar.GetDescriptorsAsync())
+        //            .FirstOrDefault(d => d.Id == CCCD_DESCRIPTOR_UUID);
+        //        if (descriptor == null)
+        //        {
+        //            Console.WriteLine("[BLE] CCCD descriptor not found!");
+        //            return null;
+        //        }
+
+        //        // Attach notification handler first
+        //        pubChar.ValueUpdated += (s, e) =>
+        //        {
+        //            var data = e.Characteristic.Value;
+        //            if (data != null && data.Length > 0)
+        //            {
+        //                string msg = Encoding.UTF8.GetString(data);
+        //                Console.WriteLine($"[BLE] Notification received: {msg}");
+        //            }
+        //        };
+
+        //        // Enable notifications
+        //        //await descriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+        //        await descriptor.WriteAsync(new byte[] { 0x01, 0x00 });  // Enable notifications
+        //        await descriptor.WriteAsync(new byte[0]);
+        //        Console.WriteLine("[BLE] descriptor written to");
+        //        await Task.Delay(100);
+
+        //        Console.WriteLine("[BLE] waiting...");
+
+        //        await Task.Delay(100);
+
+        //        Console.WriteLine("[BLE] waiting...");
+
+        //        await Task.Delay(100);
+
+        //        Console.WriteLine("[BLE] starting updates");
+        //        // Start listening
+        //        await pubChar.StartUpdatesAsync();
+        //        Console.WriteLine("[BLE] updates started");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //        // Write 0x01,0x00 to enable notifications
+        //        //await descriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+
+        //        //write empty message bytearray to 2902
+        //        //await descriptor.WriteAsync(new byte[0]);
+        //        //await descriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+        //        //Console.WriteLine("[BLE] Wrote blank trigger to PUB characteristic to start periodic data.");
+        //        //Console.WriteLine("[BLE] CCCD descriptor written (notifications enabled).");
+
+        //        // Attach ValueUpdated handler AFTER CCCD write
+        //        //pubChar.ValueUpdated += (s, e) =>
+        //        //{
+        //        //    var data = e.Characteristic.Value;
+        //        //    if (data != null && data.Length > 0)
+        //        //    {
+        //        //        string msg = Encoding.UTF8.GetString(data);
+        //        //        Console.WriteLine($"[BLE] Notification received: {msg}");
+        //        //    }
+        //        //};
+
+        //        //await pubChar.WriteAsync(new byte[0]);
+
+
+        //        // Start updates
+        //        //await pubChar.StartUpdatesAsync();
+        //        //await descriptor.WriteAsync(new byte[0]);
+        //        //Console.WriteLine("[BLE] Subscribed to PUB notifications.");
+
+
+
+
+        //        // --- THIS IS THE KEY PART ---
+        //        // Write a blank byte array to the characteristic to trigger PUB to start sending data
+        //        //await pubChar.WriteAsync(new byte[0]);
+        //        //Console.WriteLine("[BLE] Wrote blank trigger to PUB characteristic to start periodic data.");
+
+        //        // Keep the device alive
+        //        GC.KeepAlive(device);
+        //        return pubChar;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"[BLE] Error subscribing to PUB notifications: {ex.Message}");
+        //        return null;
+        //    }
+        //}
+
+
+
+
+
+        //private static readonly Guid PUB_SERVICE_UUID = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+        //private static readonly Guid PUB_CHARACTERISTIC_UUID = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
+        //private static readonly Guid CCCD_DESCRIPTOR_UUID = Guid.Parse("00002902-0000-1000-8000-00805f9b34fb");
+        //private async Task<ICharacteristic?> SubscribeToPubNotificationsAsync(IDevice device)
+        //{
+        //    try
+        //    {
+        //        // Get the PUB service
+        //        var services = await device.GetServicesAsync();
+        //        var pubService = services.FirstOrDefault(s => s.Id == PUB_SERVICE_UUID);
+        //        if (pubService == null)
+        //        {
+        //            Console.WriteLine("[BLE] PUB primary service not found!");
+        //            return null;
+        //        }
+        //        // Get the PUB characteristic
+        //        var characteristics = await pubService.GetCharacteristicsAsync();
+        //        var pubChar = characteristics.FirstOrDefault(c => c.Id == PUB_CHARACTERISTIC_UUID);
+        //        if (pubChar == null)
+        //        {
+        //            Console.WriteLine("[BLE] PUB characteristic not found!");
+        //            return null;
+        //        }
+
+        //        Console.WriteLine($"[BLE] PUB characteristic found: {pubChar.Id}");
+
+        //        // Enable notifications by writing the CCCD descriptor
+        //        var descriptor = (await pubChar.GetDescriptorsAsync())
+        //            .FirstOrDefault(d => d.Id == CCCD_DESCRIPTOR_UUID);
+        //        if (descriptor == null)
+        //        {
+        //            Console.WriteLine("[BLE] CCCD descriptor not found!");
+        //            return null;
+        //        }
+        //        Console.WriteLine($"[BLE] Descriptor value {descriptor}");
+        //        // Write 0x01,0x00 to enable notifications
+        //        await descriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+        //        Console.WriteLine("[BLE] CCCD descriptor written (notifications enabled).");
+        //        // Attach ValueUpdated handler AFTER CCCD write
+        //        //hits
+        //        pubChar.ValueUpdated += (s, e) =>
+        //        {
+        //            var data = e.Characteristic.Value;
+        //            if (data != null && data.Length > 0)
+        //            {
+        //                string msg = Encoding.UTF8.GetString(data);
+        //                Console.WriteLine($"[BLE] Notification received: {msg}");
+        //            }
+        //        };
+        //        // Start updates
+        //        await pubChar.StartUpdatesAsync();
+        //        Console.WriteLine("[BLE] Subscribed to PUB notifications.");
+
+        //        await descriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+
+        //        // Keep the device alive
+        //        GC.KeepAlive(device);
+        //        return pubChar;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"[BLE] Error subscribing to PUB notifications: {ex.Message}");
+        //        return null;
+        //    }
+        //}
+
+        //private static readonly Guid PUB_SERVICE_UUID = Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+        //private static readonly Guid PUB_CHARACTERISTIC_UUID = Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
+        //private static readonly Guid CCCD_DESCRIPTOR_UUID = Guid.Parse("00002902-0000-1000-8000-00805f9b34fb");
+        //private async Task<ICharacteristic?> SubscribeToPubNotificationsAsync(IDevice device)
+        //{
+        //    try
+        //    {
+        //        // Get the PUB service
+        //        var services = await device.GetServicesAsync();
+        //        var pubService = services.FirstOrDefault(s => s.Id == PUB_SERVICE_UUID);
+        //        if (pubService == null)
+        //        {
+        //            Console.WriteLine("[BLE] PUB primary service not found!");
+        //            return null;
+        //        }
+
+        //        // Get the PUB characteristic
+        //        var characteristics = await pubService.GetCharacteristicsAsync();
+        //        var pubChar = characteristics.FirstOrDefault(c => c.Id == PUB_CHARACTERISTIC_UUID);
+        //        if (pubChar == null)
+        //        {
+        //            Console.WriteLine("[BLE] PUB characteristic not found!");
+        //            return null;
+        //        }
+
+        //        // Enable notifications by writing the CCCD descriptor
+        //        var descriptor = (await pubChar.GetDescriptorsAsync())
+        //            .FirstOrDefault(d => d.Id == CCCD_DESCRIPTOR_UUID);
+
+        //        if (descriptor == null)
+        //        {
+        //            Console.WriteLine("[BLE] CCCD descriptor not found!");
+        //            return null;
+        //        }
+
+        //        // Write 0x01,0x00 to enable notifications
+        //        await descriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+        //        Console.WriteLine("[BLE] CCCD descriptor written (notifications enabled).");
+
+        //        // Attach ValueUpdated handler AFTER CCCD write
+        //        pubChar.ValueUpdated += (s, e) =>
+        //        {
+        //            var data = e.Characteristic.Value;
+        //            if (data != null && data.Length > 0)
+        //            {
+        //                string msg = Encoding.UTF8.GetString(data);
+        //                Console.WriteLine($"[BLE] Notification received: {msg}");
+        //            }
+        //        };
+
+        //        // Start updates
+        //        await pubChar.StartUpdatesAsync();
+        //        Console.WriteLine("[BLE] Subscribed to PUB notifications.");
+
+        //        // Keep the device alive
+        //        GC.KeepAlive(device);
+
+        //        return pubChar;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"[BLE] Error subscribing to PUB notifications: {ex.Message}");
+        //        return null;
+        //    }
+        //}
+
+
+
+
+
+
+
+
         private async Task AcknowledgeHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -837,39 +1311,39 @@ namespace PUBTransfer
         //App ACKs data.
         //Repeat until batch is done, then PUB disconnects.
 
-        private async Task<(ICharacteristic? NotifyChar, ICharacteristic? WriteChar)> GetHeaderCharacteristicAltoAsync(IDevice device, string serial)
-        {
-            try
-            {
-                var services = await device.GetServicesAsync();
-                ICharacteristic? notifyChar = null;
-                ICharacteristic? writeChar = null;
-                foreach (var service in services)
-                {
-                    var characteristics = await service.GetCharacteristicsAsync();
-                    foreach (var c in characteristics)
-                    {
-                        Console.WriteLine($"[BLE] Service: {service.Id} | Characteristic: {c.Id} | Read={c.CanRead} Write={c.CanWrite} Update={c.CanUpdate}");
-                        // Notify characteristic
-                        if (c.Id == Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b") && c.CanUpdate)
-                        {
-                            notifyChar = c;
-                            // Subscribe to notifications
-                            c.ValueUpdated += (s, e) =>
-                            {
-                                var data = e.Characteristic.Value;
-                                Console.WriteLine($"[BLE] Notification received: {BitConverter.ToString(data)}");
-                            };
-                            await c.StartUpdatesAsync();
-                            Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
-                        }
-                        // Writable characteristic (for handshake)
-                        if (c.CanWrite && writeChar == null)
-                        {
-                            writeChar = c;
-                        }
-                    }
-                }
+        //private async Task<(ICharacteristic? NotifyChar, ICharacteristic? WriteChar)> GetHeaderCharacteristicAltoAsync(IDevice device, string serial)
+        //{
+        //    try
+        //    {
+        //        var services = await device.GetServicesAsync();
+        //        ICharacteristic? notifyChar = null;
+        //        ICharacteristic? writeChar = null;
+        //        foreach (var service in services)
+        //        {
+        //            var characteristics = await service.GetCharacteristicsAsync();
+        //            foreach (var c in characteristics)
+        //            {
+        //                Console.WriteLine($"[BLE] Service: {service.Id} | Characteristic: {c.Id} | Read={c.CanRead} Write={c.CanWrite} Update={c.CanUpdate}");
+        //                // Notify characteristic
+        //                if (c.Id == Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b") && c.CanUpdate)
+        //                {
+        //                    notifyChar = c;
+        //                    // Subscribe to notifications
+        //                    c.ValueUpdated += (s, e) =>
+        //                    {
+        //                        var data = e.Characteristic.Value;
+        //                        Console.WriteLine($"[BLE] Notification received: {BitConverter.ToString(data)}");
+        //                    };
+        //                    await c.StartUpdatesAsync();
+        //                    Console.WriteLine("[BLE] Subscribed to header characteristic updates.");
+        //                }
+        //                // Writable characteristic (for handshake)
+        //                if (c.CanWrite && writeChar == null)
+        //                {
+        //                    writeChar = c;
+        //                }
+        //            }
+        //        }
 
 
 
@@ -878,17 +1352,15 @@ namespace PUBTransfer
 
 
 
-                foreach (var service in services)
-                {
-                    var characteristics = await service.GetCharacteristicsAsync();
+        //        foreach (var service in services)
+        //        {
+        //            var characteristics = await service.GetCharacteristicsAsync();
 
-                    foreach (var c in characteristics)
-                    {
-                        Console.WriteLine($"[BLE] Service: {service.Id} | Characteristic: {c.Id} | Read={c.CanRead} Write={c.CanWrite} Update={c.CanUpdate}");
-                    }
-                }
-
-
+        //            foreach (var c in characteristics)
+        //            {
+        //                Console.WriteLine($"[BLE] Service: {service.Id} | Characteristic: {c.Id} | Read={c.CanRead} Write={c.CanWrite} Update={c.CanUpdate}");
+        //            }
+        //        }
 
 
 
@@ -898,31 +1370,131 @@ namespace PUBTransfer
 
 
 
-                if (notifyChar == null)
-                {
-                    Console.WriteLine("[BLE] Notify characteristic not found!");
-                    return (null, null);
-                }
 
-                if (writeChar == null)
-                {
-                    Console.WriteLine("[BLE] Writable characteristic not found!");
-                    return (notifyChar, null);
-                }
 
-                // Send initial header request handshake
-                string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
-                string handshake = $"2,{serial},{timeStamp},005";
-                await writeChar.WriteAsync(Encoding.UTF8.GetBytes(handshake));
-                Console.WriteLine($"[BLE] Sent header request handshake: {handshake}");
-                return (notifyChar, writeChar);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[BLE] Error in GetHeaderCharacteristicAltoAsync: {ex.Message}");
-                return (null, null);
-            }
-        }        
+        //        if (notifyChar == null)
+        //        {
+        //            Console.WriteLine("[BLE] Notify characteristic not found!");
+        //            return (null, null);
+        //        }
+
+        //        if (writeChar == null)
+        //        {
+        //            Console.WriteLine("[BLE] Writable characteristic not found!");
+        //            return (notifyChar, null);
+        //        }
+
+        //        // Send initial header request handshake
+        //        string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+        //        string handshake = $"2,{serial},{timeStamp},005";
+        //        await writeChar.WriteAsync(Encoding.UTF8.GetBytes(handshake));
+        //        Console.WriteLine($"[BLE] Sent header request handshake: {handshake}");
+        //        return (notifyChar, writeChar);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"[BLE] Error in GetHeaderCharacteristicAltoAsync: {ex.Message}");
+        //        return (null, null);
+        //    }
+        //}
+    //    private static readonly Guid PUB_SERVICE_UUID =
+    //Guid.Parse("fd5abba0-3935-11e5-85a6-0002a5d5c51b");
+    //    private static readonly Guid PUB_CHARACTERISTIC_UUID =
+    //        Guid.Parse("fd5abba1-3935-11e5-85a6-0002a5d5c51b");
+    //    private static readonly Guid CCCD_DESCRIPTOR_UUID =
+    //        Guid.Parse("00002902-0000-1000-8000-00805f9b34fb"); // Standard notification descriptor
+
+    //    private async Task<(ICharacteristic? NotifyChar, ICharacteristic? WriteChar)>
+    //        GetHeaderCharacteristicAltoAsync(IDevice device, string serial)
+    //    {
+    //        try
+    //        {
+
+
+
+
+    //            var services = await device.GetServicesAsync();
+    //            ICharacteristic? notifyChar = null;
+    //            ICharacteristic? writeChar = null;
+    //            // Find PUB service
+    //            var pubService = services.FirstOrDefault(s => s.Id == PUB_SERVICE_UUID);
+    //            if (pubService == null)
+    //            {
+    //                Console.WriteLine("[BLE] PUB primary service not found!");
+    //                return (null, null);
+    //            }
+    //            var characteristics = await pubService.GetCharacteristicsAsync();
+    //            foreach (var c in characteristics)
+    //            {
+    //                Console.WriteLine($"[BLE] Char: {c.Id} | Read={c.CanRead} Write={c.CanWrite} Update={c.CanUpdate}");
+
+    //                if (c.Id == PUB_CHARACTERISTIC_UUID)
+    //                {
+    //                    notifyChar = c;
+    //                    writeChar = c; // same characteristic often used for both read/write on PUBs
+    //                }
+    //            }
+    //            if (notifyChar == null)
+    //            {
+    //                Console.WriteLine("[BLE] Notify characteristic not found!");
+    //                return (null, null);
+    //            }
+    //            // Explicitly write the CCCD descriptor to enable notifications
+    //            var descriptor = (await notifyChar.GetDescriptorsAsync())
+    //                .FirstOrDefault(d => d.Id == CCCD_DESCRIPTOR_UUID);
+    //            if (descriptor != null)
+    //            {
+    //                await descriptor.WriteAsync(new byte[] { 0x01, 0x00 }); // Enable notification
+    //                Console.WriteLine("[BLE] CCCD descriptor written (notifications enabled).");
+    //            }
+    //            // Start receiving updates
+    //            notifyChar.ValueUpdated += (s, e) =>
+    //            {
+    //                var data = e.Characteristic.Value;
+    //                string msg = Encoding.UTF8.GetString(data);
+    //                Console.WriteLine($"[BLE] Notification received: {msg}");
+    //            };
+
+
+
+    //            await Task.Delay(500);
+
+
+
+    //            await notifyChar.StartUpdatesAsync();
+    //            Console.WriteLine("[BLE] Subscribed to PUB notifications.");
+
+
+    //            //test
+    //            notifyChar.ValueUpdated += (s, e) =>
+    //            {
+    //                var data = e.Characteristic.Value;
+    //                string msg = Encoding.UTF8.GetString(data);
+    //                Console.WriteLine($"[BLE] Notification received: {msg}");
+    //            };
+    //            //end test
+
+    //            // Send the initial handshake (Header Request)
+    //            string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+    //            string handshake = $"2,{serial},{timeStamp},005";
+    //            //await notifyChar.WriteAsync(Encoding.UTF8.GetBytes(handshake));
+    //            //Console.WriteLine($"[BLE] Sent header request handshake: {handshake}");
+    //            return (notifyChar, writeChar);
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            Console.WriteLine($"[BLE] Error in GetHeaderCharacteristicAltoAsync: {ex.Message}");
+    //            return (null, null);
+    //        }
+    //    }
+
+
+
+
+
+
+
+
         private async Task AcknowledgeAltoHeaderAsync(ICharacteristic characteristic, string serialNumber)
         {
             string timeStamp = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
@@ -1060,6 +1632,10 @@ namespace PUBTransfer
                 await Application.Current.MainPage.DisplayAlert("Error", $"Upload confirmation failed: {ex.Message}", "OK");
             }
         }
+
+
+
+        //PUB1192
         private async void OnScanClicked(object sender, EventArgs e)
         {
             ScanButton.IsEnabled = false;
@@ -1078,19 +1654,40 @@ namespace PUBTransfer
                     return;
                 }
                 Devices.Clear();
-                _bluetoothAdapter.DeviceDiscovered += (s, a) =>
+                IDevice? targetDevice = null;
+                _bluetoothAdapter.DeviceDiscovered += async (s, a) =>
                 {
-                    if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
+                    try
                     {
-                        if (!Devices.Contains(a.Device))
+                        if (!string.IsNullOrEmpty(a.Device.Name))
                         {
-                            MainThread.BeginInvokeOnMainThread(() =>
+                            Console.WriteLine($"[BLE] Found: {a.Device.Name}");
+                            // Check for the exact name
+                            if (a.Device.Name.Equals("PUB1192", StringComparison.OrdinalIgnoreCase))
                             {
-                                Devices.Add(a.Device);
-                            });
+                                Console.WriteLine("[BLE] Found target device: PUB1192");
+                                targetDevice = a.Device;
+                                // Stop scanning once found
+                                await _bluetoothAdapter.StopScanningForDevicesAsync();
+                                // Optionally, add it to the list so user can see it
+                                MainThread.BeginInvokeOnMainThread(() =>
+                                {
+                                    if (!Devices.Contains(targetDevice))
+                                        Devices.Add(targetDevice);
+                                });
+                                // Optionally connect automatically:
+                                //await ConnectToPubDevice(targetDevice);
+                                // Unsubscribe so it doesn't trigger again
+                                _bluetoothAdapter.DeviceDiscovered -= null!;
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[BLE] Error in DeviceDiscovered: {ex.Message}");
+                    }
                 };
+                Console.WriteLine("[BLE] Starting scan...");
                 await _bluetoothAdapter.StartScanningForDevicesAsync();
             }
             catch (Exception ex)
@@ -1103,6 +1700,50 @@ namespace PUBTransfer
                 ScanButton.Text = "Scan";
             }
         }
+        //any PUB
+        //private async void OnScanClicked(object sender, EventArgs e)
+        //{
+        //    ScanButton.IsEnabled = false;
+        //    ScanButton.Text = "Scanning...";
+        //    try
+        //    {
+        //        var permissionStatus = await RequestBluetoothPermissions();
+        //        if (permissionStatus != PermissionStatus.Granted)
+        //        {
+        //            await DisplayAlert("Permission Denied", "Bluetooth permissions are required", "OK");
+        //            return;
+        //        }
+        //        if (!_bluetoothLE.IsOn)
+        //        {
+        //            await DisplayAlert("Bluetooth Off", "Please enable Bluetooth", "OK");
+        //            return;
+        //        }
+        //        Devices.Clear();
+        //        _bluetoothAdapter.DeviceDiscovered += (s, a) =>
+        //        {
+        //            if (!string.IsNullOrEmpty(a.Device.Name) && a.Device.Name.StartsWith("PUB"))
+        //            {
+        //                if (!Devices.Contains(a.Device))
+        //                {
+        //                    MainThread.BeginInvokeOnMainThread(() =>
+        //                    {
+        //                        Devices.Add(a.Device);
+        //                    });
+        //                }
+        //            }
+        //        };
+        //        await _bluetoothAdapter.StartScanningForDevicesAsync();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await DisplayAlert("Error", $"Failed to scan: {ex.Message}", "OK");
+        //    }
+        //    finally
+        //    {
+        //        ScanButton.IsEnabled = true;
+        //        ScanButton.Text = "Scan";
+        //    }
+        //}
         private async Task<PermissionStatus> RequestBluetoothPermissions()
         {
             try
