@@ -459,52 +459,55 @@ namespace PUBTransfer
 
             //    Console.WriteLine("Injected Base64 GLB into WebView");
             //};
-            ModelViewer.Navigated += async (s, e) =>
-            {
-                try
-                {
-                    // Wait for JS to be ready
-                    for (int i = 0; i < 50; i++)
-                    {
-                        var result = await ModelViewer.EvaluateJavaScriptAsync(
-                            "typeof window.loadGLBFromBase64 !== 'undefined'"
-                        );
 
-                        if (result == "true")
-                        {
-                            string base64GLB = await GetGLBBase64Async();
 
-                            // Split into safe chunks for iOS (max ~10KB per call)
-                            int chunkSize = 10000;
-                            await ModelViewer.EvaluateJavaScriptAsync("window.glbChunks = [];");
+            //ModelViewer.Navigated += async (s, e) =>
+            //{
+            //    try
+            //    {
+            //        // Wait for JS to be ready
+            //        for (int i = 0; i < 50; i++)
+            //        {
+            //            var result = await ModelViewer.EvaluateJavaScriptAsync(
+            //                "typeof window.loadGLBFromBase64 !== 'undefined'"
+            //            );
 
-                            for (int j = 0; j < base64GLB.Length; j += chunkSize)
-                            {
-                                string chunk = base64GLB.Substring(j,
-                                    Math.Min(chunkSize, base64GLB.Length - j));
-                                await ModelViewer.EvaluateJavaScriptAsync(
-                                    $"window.glbChunks.push('{chunk}');"
-                                );
-                            }
+            //            if (result == "true")
+            //            {
+            //                string base64GLB = await GetGLBBase64Async();
 
-                            await ModelViewer.EvaluateJavaScriptAsync(
-                                "window.loadGLBFromBase64(window.glbChunks.join(''));"
-                            );
+            //                // Split into safe chunks for iOS (max ~10KB per call)
+            //                int chunkSize = 10000;
+            //                await ModelViewer.EvaluateJavaScriptAsync("window.glbChunks = [];");
 
-                            Console.WriteLine("Base64 GLB injected successfully!");
-                            return;
-                        }
+            //                for (int j = 0; j < base64GLB.Length; j += chunkSize)
+            //                {
+            //                    string chunk = base64GLB.Substring(j,
+            //                        Math.Min(chunkSize, base64GLB.Length - j));
+            //                    await ModelViewer.EvaluateJavaScriptAsync(
+            //                        $"window.glbChunks.push('{chunk}');"
+            //                    );
+            //                }
 
-                        await Task.Delay(100);
-                    }
+            //                await ModelViewer.EvaluateJavaScriptAsync(
+            //                    "window.loadGLBFromBase64(window.glbChunks.join(''));"
+            //                );
 
-                    Console.WriteLine("Timeout waiting for JS function");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error: {ex.Message}");
-                }
-            };
+            //                Console.WriteLine("Base64 GLB injected successfully!");
+            //                return;
+            //            }
+
+            //            await Task.Delay(100);
+            //        }
+
+            //        Console.WriteLine("Timeout waiting for JS function");
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Console.WriteLine($"Error: {ex.Message}");
+            //    }
+            //};
+
             //ModelViewer.Navigated += async (s, e) =>
             //{
             //    try
@@ -600,20 +603,20 @@ namespace PUBTransfer
             DevicesListView.ItemsSource = Devices;
         }
 
-        public async Task<string> GetGLBBase64Async()
-        {
-            using var stream = await FileSystem.OpenAppPackageFileAsync("steampunk_vape.glb");
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms);
-            byte[] bytes = ms.ToArray();
-            return Convert.ToBase64String(bytes);
-        }
+        //public async Task<string> GetGLBBase64Async()
+        //{
+        //    using var stream = await FileSystem.OpenAppPackageFileAsync("steampunk_vape.glb");
+        //    using var ms = new MemoryStream();
+        //    await stream.CopyToAsync(ms);
+        //    byte[] bytes = ms.ToArray();
+        //    return Convert.ToBase64String(bytes);
+        //}
 
-        private async void MainPage_Loaded(object sender, EventArgs e)
-        {
-            await StartLocalServer();
-            //webView.Source = "http://localhost:9696/modelviewer.html";
-        }
+        //private async void MainPage_Loaded(object sender, EventArgs e)
+        //{
+        //    //await StartLocalServer();
+        //    //webView.Source = "http://localhost:9696/modelviewer.html";
+        //}
 
         private async Task StartLocalServer()
         {
@@ -880,6 +883,34 @@ namespace PUBTransfer
 
                 await Task.Delay(500);
                 await cccdDescriptor.WriteAsync(new byte[] { 0x01, 0x00 });
+
+
+
+                pubChar.ValueUpdated += (s, e) =>
+                {
+                    var data = e.Characteristic.Value;
+                    if (data != null && data.Length > 0)
+                    {
+                        string msg = Encoding.UTF8.GetString(data);
+                        Console.WriteLine($"[BLE] ===== NOTIFICATION RECEIVED =====");
+                        Console.WriteLine($"[BLE] Data: {msg}");
+                        Console.WriteLine($"[BLE] Length: {data.Length} bytes");
+                        Console.WriteLine($"[BLE] Hex: {BitConverter.ToString(data)}");
+                        Console.WriteLine($"[BLE] ==================================");
+
+                        // Parse and handle your data here
+                        MainThread.BeginInvokeOnMainThread(() => HandleNotificationData(msg));
+                    }
+                    else
+                    {
+                        Console.WriteLine("[BLE] Empty notification received");
+                    }
+                };
+
+
+
+
+
 
                 //await cccdDescriptor.StartUpdatesAsync();
 
@@ -1801,14 +1832,16 @@ namespace PUBTransfer
             base.OnAppearing();
 
 
-            await StartLocalServer();
+            //await StartLocalServer();
 
             // Load page from local HTTP server
             //ModelViewer.Source = new UrlWebViewSource
             //{
             //    Url = "http://127.0.0.1:9696/modelviewer.html"
             //};
-            ModelViewer.Source = "http://localhost:9696/modelviewer.html";
+
+
+            //ModelViewer.Source = "http://localhost:9696/modelviewer.html";
 
 
 
